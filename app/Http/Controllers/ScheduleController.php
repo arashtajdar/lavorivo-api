@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Schedule;
 use Illuminate\Http\Request;
 
 class ScheduleController extends Controller
@@ -11,7 +12,7 @@ class ScheduleController extends Controller
      */
     public function index()
     {
-        //
+        return Schedule::with(['user', 'shift'])->get();
     }
 
     /**
@@ -19,7 +20,15 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'shift_id' => 'required|exists:shifts,id',
+            'shift_index' => 'required|integer',
+        ]);
+
+        $schedule = Schedule::create($request->all());
+
+        return response()->json($schedule, 201);
     }
 
     /**
@@ -27,7 +36,7 @@ class ScheduleController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return Schedule::with(['user', 'shift'])->findOrFail($id);
     }
 
     /**
@@ -35,7 +44,17 @@ class ScheduleController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $schedule = Schedule::findOrFail($id);
+
+        $request->validate([
+            'user_id' => 'sometimes|exists:users,id',
+            'shift_id' => 'sometimes|exists:shifts,id',
+            'shift_index' => 'sometimes|integer',
+        ]);
+
+        $schedule->update($request->all());
+
+        return response()->json($schedule);
     }
 
     /**
@@ -43,6 +62,9 @@ class ScheduleController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $schedule = Schedule::findOrFail($id);
+        $schedule->delete();
+
+        return response()->json(['message' => 'Schedule deleted'], 200);
     }
 }

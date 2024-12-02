@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Shop;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
@@ -11,7 +12,7 @@ class ShopController extends Controller
      */
     public function index()
     {
-        //
+        return Shop::all();
     }
 
     /**
@@ -19,7 +20,14 @@ class ShopController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
+        ]);
+
+        $shop = Shop::create($request->all());
+
+        return response()->json($shop, 201);
     }
 
     /**
@@ -27,7 +35,7 @@ class ShopController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return Shop::findOrFail($id);
     }
 
     /**
@@ -35,7 +43,16 @@ class ShopController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $shop = Shop::findOrFail($id);
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'location' => 'sometimes|string|max:255',
+        ]);
+
+        $shop->update($request->all());
+
+        return response()->json($shop);
     }
 
     /**
@@ -43,6 +60,9 @@ class ShopController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $shop = Shop::findOrFail($id);
+        $shop->delete();
+
+        return response()->json(['message' => 'Shop deleted'], 200);
     }
 }

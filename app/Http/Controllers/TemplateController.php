@@ -9,7 +9,7 @@ class TemplateController extends Controller
     // List all templates
     public function index()
     {
-        return Template::with('templateDays')->get();
+        return Template::with('templateDays')->paginate(10);
     }
 
     // Show a single template

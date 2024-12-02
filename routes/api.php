@@ -16,17 +16,25 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Templates
-Route::apiResource('templates', TemplateController::class);
+Route::middleware('auth:sanctum')->group(function () {
+    // Templates
+    Route::apiResource('templates', TemplateController::class);
 
 // Template Days (if needed separately, otherwise handled in TemplateController)
-Route::apiResource('template-days', TemplateDayController::class);
+    Route::apiResource('template-days', TemplateDayController::class);
 
 // Shifts
-Route::apiResource('shifts', ShiftController::class);
+    Route::apiResource('shifts', ShiftController::class);
 
 // Schedules
-Route::apiResource('schedules', ScheduleController::class);
+    Route::apiResource('schedules', ScheduleController::class);
 
 // Shops
-Route::apiResource('shops', ShopController::class);
+    Route::apiResource('shops', ShopController::class);
+
+    // other endpoints
+    Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
+    Route::apiResource('schedules', ScheduleController::class);
+
+});
+
