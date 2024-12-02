@@ -9,18 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('template_days', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->foreignId('template_id')->constrained('templates')->onDelete('cascade'); // Links to template
+            $table->tinyInteger('day_of_week'); // 1 = Monday, 7 = Sunday
+            $table->json('shift_data'); // JSON data for shifts
+            $table->timestamps(); // Created and updated timestamps
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('template_days');
     }

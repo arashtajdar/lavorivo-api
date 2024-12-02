@@ -9,18 +9,17 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('templates', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('name'); // Template name
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade'); // Creator
+            $table->timestamps(); // Created and updated timestamps
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('templates');
     }

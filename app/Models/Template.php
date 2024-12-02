@@ -6,5 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Template extends Model
 {
-    //
+    public function templateDays()
+    {
+        return $this->hasMany(TemplateDay::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

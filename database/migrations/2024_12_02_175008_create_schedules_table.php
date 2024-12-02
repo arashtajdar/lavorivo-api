@@ -9,18 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Employee assigned to shift
+            $table->foreignId('shift_id')->constrained('shifts')->onDelete('cascade'); // Specific shift
+            $table->integer('shift_index'); // Index of the specific shift in shift_data JSON
+            $table->timestamps(); // Created and updated timestamps
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('schedules');
     }
