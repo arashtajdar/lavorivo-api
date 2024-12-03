@@ -22,4 +22,9 @@ class Shift extends Model
     {
         return $this->hasMany(Schedule::class);
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(Schedule::class);
+    }
 }
