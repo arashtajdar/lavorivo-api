@@ -21,26 +21,13 @@ class ShiftController extends Controller
             $shiftsQuery->where('shop_id', $request->shop_id);
         }
 
-        $shifts = $shiftsQuery->with(['assignments.user'])->get();
-
-        // Format the response to include assignments per shift index
+        $shifts = $shiftsQuery->get();
         $formattedShifts = $shifts->map(function ($shift) {
-            // Prepare assignments for each shift index
-            $assignments = [];
-            foreach ($shift->shift_data as $index => $data) {
-                $schedule = $shift->assignments->firstWhere('shift_index', $index);
-                $assignments[] = [
-                    'shift_index' => $index,
-                    'employee' => $schedule ? $schedule->user : null,
-                ];
-            }
-
             return [
                 'id' => $shift->id,
                 'shop_id' => $shift->shop_id,
                 'date' => $shift->date,
                 'shift_data' => $shift->shift_data,
-                'assignments' => $assignments,
             ];
         });
 
