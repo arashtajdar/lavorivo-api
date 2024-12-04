@@ -73,7 +73,6 @@ class ShiftController extends Controller
         $shift = Shift::findOrFail($id);
 
         $request->validate([
-            'date' => 'sometimes|date',
             'shift_data' => 'sometimes|array',
         ]);
 
@@ -90,4 +89,26 @@ class ShiftController extends Controller
 
         return response()->json(['message' => 'Shift deleted'], 200);
     }
+
+    // Add to ShiftController or create a new route
+    public function employeeShifts(Request $request)
+    {
+        $user = $request->user(); // Get the currently authenticated user
+
+        $shifts = \App\Models\Schedule::with(['shift'])
+            ->where('user_id', $user->id) // Filter by the user's ID
+            ->get()
+            ->map(function ($schedule) {
+                $shift = $schedule->shift;
+
+                return [
+                    'date' => $shift->date,
+                    'label' => $shift->shift_data[$schedule->shift_index]['label'] ?? 'Unknown',
+                    'duration_minutes' => $shift->shift_data[$schedule->shift_index]['duration_minutes'] ?? 0,
+                ];
+            });
+
+        return response()->json($shifts);
+    }
+
 }

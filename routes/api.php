@@ -35,6 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // other endpoints
     Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
     Route::apiResource('schedules', ScheduleController::class);
-
+    Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
 });
 
