@@ -6,15 +6,13 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TemplateDayController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
     // Templates
@@ -36,5 +34,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
     Route::apiResource('schedules', ScheduleController::class);
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
+
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::get('/shops/{shopId}/users', [UserController::class, 'usersByShop']);
 });
 
