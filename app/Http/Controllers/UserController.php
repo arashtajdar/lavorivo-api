@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     // List all users
     public function index()
     {
-        return response()->json(User::all());
+        return response()->json(User::with('shops')->get());
     }
 
     // Show a specific user
@@ -30,7 +31,7 @@ class UserController extends Controller
                 'password' => 'required|string|min:6',
                 'role' => 'required|integer',
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors(), // Returns detailed validation error messages
@@ -39,6 +40,7 @@ class UserController extends Controller
 
 
         $validated['password'] = bcrypt($validated['password']); // Hash password
+
         $user = User::create($validated);
 
         return response()->json($user, 201);
@@ -67,5 +69,6 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+
 }
 

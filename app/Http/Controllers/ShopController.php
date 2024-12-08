@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
@@ -65,4 +66,37 @@ class ShopController extends Controller
 
         return response()->json(['message' => 'Shop deleted'], 200);
     }
+
+    public function addUserToShop(Request $request, $shopId)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $shop = Shop::findOrFail($shopId);
+        $user = User::findOrFail($validated['user_id']);
+
+        // Attach the user to the shop if not already attached
+        if (!$shop->users()->where('user_id', $user->id)->exists()) {
+            $shop->users()->attach($user->id);
+            return response()->json(['message' => 'User added to shop successfully.'], 200);
+        }
+
+        return response()->json(['message' => 'User is already assigned to this shop.'], 409);
+    }
+
+    public function removeUserFromShop($shopId, $userId)
+    {
+        $shop = Shop::findOrFail($shopId);
+        $user = User::findOrFail($userId);
+
+        // Detach the user from the shop
+        if ($shop->users()->where('user_id', $user->id)->exists()) {
+            $shop->users()->detach($user->id);
+            return response()->json(['message' => 'User removed from shop successfully.'], 200);
+        }
+
+        return response()->json(['message' => 'User is not assigned to this shop.'], 404);
+    }
+
 }
