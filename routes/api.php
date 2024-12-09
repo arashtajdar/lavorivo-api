@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Templates
@@ -31,6 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('shops', ShopController::class);
 
     // other endpoints
+    Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
+
+
     Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
     Route::apiResource('schedules', ScheduleController::class);
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
@@ -46,5 +50,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shops/{shopId}/users', [UserController::class, 'usersByShop']);
     Route::post('/shops/{shopId}/users', [ShopController::class, 'addUserToShop']);
     Route::delete('/shops/{shopId}/users/{userId}', [ShopController::class, 'removeUserFromShop']);
+
 });
 

@@ -99,4 +99,15 @@ class ShopController extends Controller
         return response()->json(['message' => 'User is not assigned to this shop.'], 404);
     }
 
+    public function shopsByEmployer()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        $shops = Shop::where('owner', auth()->id())->get();
+
+        return response()->json($shops);
+    }
+
 }
