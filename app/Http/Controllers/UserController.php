@@ -46,6 +46,30 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
+    public function addEmployee(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email'
+            ]);
+            $validated['password'] = '1234567890';
+            $validated['role'] = 1;
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(), // Returns detailed validation error messages
+            ], 422); // HTTP status code for Unprocessable Entity
+        }
+
+
+        $validated['password'] = bcrypt($validated['password']); // Hash password
+
+        $user = User::create($validated);
+
+        return response()->json($user, 201);
+    }
+
     // Delete a user
     public function destroy($id)
     {
