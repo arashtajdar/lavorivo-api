@@ -55,6 +55,7 @@ class UserController extends Controller
             ]);
             $validated['password'] = '1234567890';
             $validated['role'] = 1;
+            $validated['employer'] = auth()->id();
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -90,6 +91,13 @@ class UserController extends Controller
 
         $shop = Shop::findOrFail($shopId);
         $users = $shop->users;
+
+        return response()->json($users);
+    }
+
+    public function usersByEmployer()
+    {
+        $users = User::where('employer', auth()->id())->with('shops')->get();
 
         return response()->json($users);
     }

@@ -35,7 +35,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('schedules', ScheduleController::class);
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
 
+    Route::get('/users/employer', [UserController::class, 'usersByEmployer']);
+
     Route::get('/users', [UserController::class, 'index']);
+
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
     Route::post('/users/addEmployee', [UserController::class, 'addEmployee']);
