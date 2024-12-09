@@ -25,7 +25,7 @@ class ShopController extends Controller
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
         ]);
-
+        $request['owner'] = auth()->id();
         $shop = Shop::create($request->all());
 
         return response()->json($shop, 201);
