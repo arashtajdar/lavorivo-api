@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shift;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -50,14 +51,24 @@ class ShiftController extends Controller
 
         $shifts = $shiftsQuery->get();
 
+        // Fetch user information for shift_data processing
+        $userMap = User::pluck('name', 'id'); // Get a map of user IDs to usernames
+
         // Organize shifts by date
         $shiftsByDate = $shifts->groupBy('date')
-            ->map(function ($shiftsOnDate) {
-                return $shiftsOnDate->map(function ($shift) {
+            ->map(function ($shiftsOnDate) use ($userMap) {
+                return $shiftsOnDate->map(function ($shift) use ($userMap) {
+                    // Enhance shift_data with usernames
+                    $enhancedShiftData = collect($shift->shift_data)->map(function ($data) use ($userMap) {
+                        return array_merge($data, [
+                            'username' => $userMap->get($data['userId'], 'Unassigned'),
+                        ]);
+                    });
+
                     return [
                         'id' => $shift->id,
                         'shop_id' => $shift->shop_id,
-                        'shift_data' => $shift->shift_data,
+                        'shift_data' => $enhancedShiftData,
                     ];
                 });
             });
