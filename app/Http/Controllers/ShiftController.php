@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shift;
+use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -36,6 +37,7 @@ class ShiftController extends Controller
         return response()->json($formattedShifts);
     }
 
+
     public function employeeShifts(Request $request)
     {
         // Validate optional shop_id query parameter
@@ -51,13 +53,14 @@ class ShiftController extends Controller
 
         $shifts = $shiftsQuery->get();
 
-        // Fetch user information for shift_data processing
-        $userMap = User::pluck('name', 'id'); // Get a map of user IDs to usernames
+        // Fetch user and shop information for processing
+        $userMap = User::pluck('name', 'id'); // Map userId to username
+        $shopMap = Shop::pluck('name', 'id'); // Map shopId to shop name
 
         // Organize shifts by date
         $shiftsByDate = $shifts->groupBy('date')
-            ->map(function ($shiftsOnDate) use ($userMap) {
-                return $shiftsOnDate->map(function ($shift) use ($userMap) {
+            ->map(function ($shiftsOnDate) use ($userMap, $shopMap) {
+                return $shiftsOnDate->map(function ($shift) use ($userMap, $shopMap) {
                     // Enhance shift_data with usernames
                     $enhancedShiftData = collect($shift->shift_data)->map(function ($data) use ($userMap) {
                         return array_merge($data, [
@@ -68,6 +71,7 @@ class ShiftController extends Controller
                     return [
                         'id' => $shift->id,
                         'shop_id' => $shift->shop_id,
+                        'shop_name' => $shopMap->get($shift->shop_id, 'Unknown Shop'), // Add shop name
                         'shift_data' => $enhancedShiftData,
                     ];
                 });
