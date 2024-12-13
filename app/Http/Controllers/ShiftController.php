@@ -37,16 +37,17 @@ class ShiftController extends Controller
         return response()->json($formattedShifts);
     }
 
-
     public function employeeShifts(Request $request)
     {
-        // Validate optional shop_id query parameter
-        $request->validate([
-            'shop_id' => 'sometimes|exists:shops,id',
-        ]);
+        $currentUser = auth()->user();
+        $userShopsOwnedIds = Shop::where('owner', $currentUser->id)->pluck('id');
 
-        // Fetch shifts, optionally filtered by shop_id
-        $shiftsQuery = Shift::query();
+        if ($userShopsOwnedIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Fetch shifts for the user's shops, optionally filtered by shop_id
+        $shiftsQuery = Shift::query()->whereIn('shop_id', $userShopsOwnedIds);
         if ($request->has('shop_id')) {
             $shiftsQuery->where('shop_id', $request->shop_id);
         }
