@@ -40,57 +40,71 @@ class ShiftController extends Controller
     public function employeeShifts(Request $request)
     {
         $currentUser = auth()->user();
-        $userShopsOwnedIds = Shop::where('owner', $currentUser->id)->pluck('id');
+        $userShopsOwned = Shop::where('owner', $currentUser->id)->get(['id', 'name']);
 
-        if ($userShopsOwnedIds->isEmpty()) {
+        if ($userShopsOwned->isEmpty()) {
             return response()->json([]);
         }
 
-        // Fetch shifts for the user's shops, optionally filtered by shop_id
-        $shiftsQuery = Shift::query()->whereIn('shop_id', $userShopsOwnedIds);
+        // Map shop IDs to their names for quick lookup
+        $shopMap = $userShopsOwned->pluck('name', 'id'); // [shop_id => shop_name]
+
+        // Fetch shifts for the user's shops
+        $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
         if ($request->has('shop_id')) {
             $shiftsQuery->where('shop_id', $request->shop_id);
         }
 
         $shifts = $shiftsQuery->get();
 
-        // Fetch user and shop information for processing
-        $userMap = User::pluck('name', 'id'); // Map userId to username
-        $shopMap = Shop::pluck('name', 'id'); // Map shopId to shop name
+        // Fetch user information for processing
+        $userMap = User::pluck('name', 'id'); // [user_id => username]
 
         // Organize shifts by date
         $shiftsByDate = $shifts->groupBy('date')
             ->map(function ($shiftsOnDate) use ($userMap, $shopMap) {
-                return $shiftsOnDate->map(function ($shift) use ($userMap, $shopMap) {
-                    // Enhance shift_data with usernames
-                    $enhancedShiftData = collect($shift->shift_data)->map(function ($data) use ($userMap) {
-                        return array_merge($data, [
-                            'username' => $userMap->get($data['userId'], 'Unassigned'),
-                        ]);
-                    });
-
+                // Group shifts by shop_id
+                return $shiftsOnDate->groupBy('shop_id')->map(function ($shiftsByShop, $shopId) use ($userMap, $shopMap) {
                     return [
-                        'id' => $shift->id,
-                        'shop_id' => $shift->shop_id,
-                        'shop_name' => $shopMap->get($shift->shop_id, 'Unknown Shop'), // Add shop name
-                        'shift_data' => $enhancedShiftData,
+                        'id' => $shiftsByShop->first()->id,
+                        'shop_id' => $shopId,
+                        'shop_name' => $shopMap->get($shopId, 'Unknown Shop'),
+                        'shift_data' => $shiftsByShop->map(function ($shift) use ($userMap) {
+                            return collect($shift->shift_data)->map(function ($data) use ($userMap) {
+                                return array_merge($data, [
+                                    'username' => $userMap->get($data['userId'], 'Unassigned'),
+                                ]);
+                            })->toArray();
+                        })->flatten(1)->toArray(),
                     ];
                 });
             });
 
-        // Get the start of the current week (Monday)
+        // Ensure all shops appear under each date, even if no shifts exist
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-
-        // Prepare a full list of dates for the next 4 weeks (28 days)
         $allDates = [];
         for ($i = 0; $i < 28; $i++) {
             $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
         }
 
-        // Include all dates, even those without shifts, with empty arrays as default
-        $fullShiftsByDate = collect($allDates)->mapWithKeys(function ($date) use ($shiftsByDate) {
+        $fullShiftsByDate = collect($allDates)->mapWithKeys(function ($date) use ($shiftsByDate, $shopMap) {
+            // Initialize with all shops and empty shift_data
+            $shopsWithShifts = $shiftsByDate->get($date, collect());
+            $shopsWithShifts = $shopsWithShifts->toArray();
+
+            $shops = $shopMap->map(function ($shopName, $shopId) use ($shopsWithShifts) {
+                $existingShop = collect($shopsWithShifts)->firstWhere('shop_id', $shopId);
+
+                return $existingShop ?? [
+                    'id' => null,
+                    'shop_id' => $shopId,
+                    'shop_name' => $shopName,
+                    'shift_data' => [],
+                ];
+            });
+
             return [
-                $date => $shiftsByDate->get($date, []), // Use existing shifts or an empty array
+                $date => $shops->values()->toArray(),
             ];
         });
 
