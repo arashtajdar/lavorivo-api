@@ -29,13 +29,21 @@ class ShiftLabelController extends Controller
     }
 
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function getAllShiftLabels()
     {
-        //
+        $currentUser = auth()->user();
+
+        // Get all shops owned by the current user
+        $ownedShops = Shop::where('owner', $currentUser->id)->pluck('id');
+
+        // Fetch shift labels for those shops and group them by shop_id
+        $shiftLabels = ShiftLabel::whereIn('shop_id', $ownedShops)
+            ->get()
+            ->groupBy('shop_id');
+
+        return response()->json($shiftLabels);
     }
+
 
     /**
      * Store a newly created resource in storage.
