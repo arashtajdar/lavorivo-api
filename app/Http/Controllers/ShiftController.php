@@ -120,7 +120,6 @@ class ShiftController extends Controller
             'date' => 'required|date',
             'shift_data' => 'required|array',
         ]);
-//dd($validatedRequest);
         $previousShiftInDb = Shift::query()->where(
             [
                 'shop_id'=> $validatedRequest['shop_id'],
@@ -131,12 +130,9 @@ class ShiftController extends Controller
             $shiftData = array_merge($previousShiftInDb['shift_data'], $validatedRequest['shift_data']);
             foreach ($shiftData as $key => $shift) {
                 if ($shift['userId'] === 0) {
-//                    dd('here');
-
                     unset($shiftData[$key]);
                 }
             }
-//            dd($request['shift_data']);
             $previousShiftInDb->shift_data = $shiftData;
             $previousShiftInDb->save();
             return response()->json($previousShiftInDb, 201);
@@ -156,15 +152,24 @@ class ShiftController extends Controller
     // Update a shift
     public function update(Request $request, $id)
     {
-        $shift = Shift::findOrFail($id);
+        $previousShiftInDb = Shift::findOrFail($id);
 
-        $request->validate([
+        $validatedRequest = $request->validate([
             'shift_data' => 'sometimes|array',
         ]);
 
-        $shift->update($request->all());
+        foreach ($validatedRequest['shift_data'] as $key => $shift) {
+            if ($shift['userId'] === 0) {
+                unset($validatedRequest['shift_data'][$key]);
+            }
+        }
+        $previousShiftInDb->shift_data = $validatedRequest['shift_data'];
+        $previousShiftInDb->save();
 
-        return response()->json($shift);
+
+//        $shift->update($request->all());
+
+        return response()->json($previousShiftInDb);
     }
 
     // Delete a shift
