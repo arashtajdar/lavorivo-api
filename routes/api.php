@@ -56,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shift-labels', [ShiftLabelController::class, 'index']);
     Route::post('/shift-labels', [ShiftLabelController::class, 'store']);
     Route::delete('/shift-labels/{id}', [ShiftLabelController::class, 'destroy']);
+    Route::put('/shift-labels/{id}', [ShiftLabelController::class, 'update']);
 
 
 });

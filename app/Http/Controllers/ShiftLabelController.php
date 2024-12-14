@@ -86,10 +86,26 @@ class ShiftLabelController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ShiftLabel $shiftLabel)
+    public function update(Request $request, $id)
     {
-        //
+        $shiftLabel = ShiftLabel::findOrFail($id);
+
+        // Ensure the user is authorized to update this shift label
+        $currentUser = auth()->user();
+        if (!Shop::where('id', $shiftLabel->shop_id)->where('owner', $currentUser->id)->exists()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'label' => 'required|string|max:255',
+            'default_duration_minutes' => 'nullable|integer|min:1',
+        ]);
+
+        $shiftLabel->update($request->only(['label', 'default_duration_minutes']));
+
+        return response()->json($shiftLabel);
     }
+
 
     /**
      * Remove the specified resource from storage.
