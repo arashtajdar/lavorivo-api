@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ShiftLabel;
+use App\Models\Shop;
 use Illuminate\Http\Request;
 
 class ShiftLabelController extends Controller
@@ -19,7 +20,7 @@ class ShiftLabelController extends Controller
         $currentUser = auth()->user();
 
         // Ensure the user owns the shop
-        if (!$currentUser->shops()->where('id', $request->shop_id)->exists()) {
+        if (!Shop::where('id', $request->shop_id)->where('owner', $currentUser->id)->exists()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -48,11 +49,12 @@ class ShiftLabelController extends Controller
         ]);
 
         $currentUser = auth()->user();
-
+//dd($currentUser->shops()->where('shop_id', $request->shop_id)->toSql());
         // Ensure the user owns the shop
-        if (!$currentUser->shops()->where('id', $request->shop_id)->exists()) {
+        if (!Shop::where('id', $request->shop_id)->where('owner', $currentUser->id)->exists()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+
 
         $shiftLabel = ShiftLabel::create([
             'shop_id' => $request->shop_id,
@@ -95,13 +97,6 @@ class ShiftLabelController extends Controller
     public function destroy($id)
     {
         $shiftLabel = ShiftLabel::findOrFail($id);
-
-        $currentUser = auth()->user();
-
-        // Ensure the user owns the shop the label belongs to
-        if (!$currentUser->shops()->where('id', $shiftLabel->shop_id)->exists()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
 
         $shiftLabel->delete();
 
