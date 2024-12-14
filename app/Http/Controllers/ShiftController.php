@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Shift;
+use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -181,6 +182,63 @@ class ShiftController extends Controller
         return response()->json(['message' => 'Shift deleted'], 200);
     }
 
-    // Add to ShiftController or create a new route
+    public function auto(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
+        foreach ($shopIds as $shopId) {
+            // Fetch all shift labels for the shop
+            $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
+
+            // Fetch all employees of the shop
+            $employees = User::where("employer",$currentUser->id)->get();
+
+            if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
+                return response()->json(['error' => 'No employees or shift labels found'], 400);
+            }
+
+            // Start of the current week
+            $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+
+            // Loop through 28 days
+            for ($i = 0; $i < 28; $i++) {
+                $date = $startOfWeek->copy()->addDays($i)->toDateString();
+                $shiftData = [];
+
+                // Assign shifts for each label to random employees
+                foreach ($shiftLabels as $label) {
+                    $randomEmployee = $employees->random();
+
+                    $shiftData[] = [
+                        'label' => $label->label,
+                        'userId' => $randomEmployee->id,
+                        'username' => $randomEmployee->name,
+                        'duration_minutes' => $label->default_duration_minutes ?? 0,
+                    ];
+                }
+
+                // Check if a shift already exists for this shop and date
+                $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $date)->first();
+
+                if ($existingShift) {
+                    // Merge new shift data with existing shift data
+                    $mergedShiftData = array_merge($existingShift->shift_data, $shiftData);
+                    $existingShift->shift_data = $mergedShiftData;
+                    $existingShift->save();
+                } else {
+                    // Create a new shift
+                    Shift::create([
+                        'shop_id' => $shopId,
+                        'date' => $date,
+                        'shift_data' => $shiftData,
+                    ]);
+                }
+            }
+        }
+
+
+        return response()->json(['message' => 'Shifts auto-assigned successfully'], 201);
+    }
 
 }

@@ -60,5 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/shift-labels/{id}', [ShiftLabelController::class, 'update']);
 
 
+    Route::post('/auto', [ShiftController::class, 'auto']);
+
+
 });
 
