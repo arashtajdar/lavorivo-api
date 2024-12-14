@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\ShiftLabelController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TemplateDayController;
@@ -50,6 +51,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shops/{shopId}/users', [UserController::class, 'usersByShop']);
     Route::post('/shops/{shopId}/users', [ShopController::class, 'addUserToShop']);
     Route::delete('/shops/{shopId}/users/{userId}', [ShopController::class, 'removeUserFromShop']);
+
+    //shift labels
+    Route::get('/shift-labels', [ShiftLabelController::class, 'index']);
+    Route::post('/shift-labels', [ShiftLabelController::class, 'store']);
+    Route::delete('/shift-labels/{id}', [ShiftLabelController::class, 'destroy']);
+
 
 });
 

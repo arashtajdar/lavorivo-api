@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('shift_labels', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('shop_id')->constrained()->onDelete('cascade'); // Link to the shop
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Creator/admin
+            $table->string('label'); // The label name
+            $table->integer('default_duration_minutes')->nullable(); // Optional default duration
             $table->timestamps();
         });
     }

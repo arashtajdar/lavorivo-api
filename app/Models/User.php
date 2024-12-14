@@ -54,10 +54,11 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Shop::class, 'shop_user');
     }
-    public function createdShiftLabels()
+    public function shiftLabels()
     {
-        return $this->hasMany(ShiftLabel::class, 'created_by');
+        return $this->hasMany(ShiftLabel::class);
     }
+
 
 
 }
