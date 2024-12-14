@@ -115,11 +115,32 @@ class ShiftController extends Controller
     // Create a new shift
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedRequest = $validRequest = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'date' => 'required|date',
             'shift_data' => 'required|array',
         ]);
+//dd($validatedRequest);
+        $previousShiftInDb = Shift::query()->where(
+            [
+                'shop_id'=> $validatedRequest['shop_id'],
+                'date'   => $validatedRequest['date'],
+            ]
+        )->first();
+        if($previousShiftInDb){
+            $shiftData = array_merge($previousShiftInDb['shift_data'], $validatedRequest['shift_data']);
+            foreach ($shiftData as $key => $shift) {
+                if ($shift['userId'] === 0) {
+//                    dd('here');
+
+                    unset($shiftData[$key]);
+                }
+            }
+//            dd($request['shift_data']);
+            $previousShiftInDb->shift_data = $shiftData;
+            $previousShiftInDb->save();
+            return response()->json($previousShiftInDb, 201);
+        }
 
         $shift = Shift::create($request->all());
 
