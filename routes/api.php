@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RuleController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
@@ -61,6 +62,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::post('/auto', [ShiftController::class, 'auto']);
+
+    Route::apiResource('rules', RuleController::class);
 
 
 });
