@@ -84,7 +84,7 @@ class ShiftController extends Controller
         // Ensure all shops appear under each date, even if no shifts exist
         $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $allDates = [];
-        for ($i = 0; $i < 28; $i++) {
+        for ($i = 0; $i < 35; $i++) {
             $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
         }
 
@@ -192,18 +192,18 @@ class ShiftController extends Controller
             $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
 
             // Fetch all employees of the shop
-            $employees = User::where("employer",$currentUser->id)->get();
+            $employees = User::where("employer", $currentUser->id)->get();
 
             if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
                 return response()->json(['error' => 'No employees or shift labels found'], 400);
             }
 
-            // Start of the current week
-            $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+            // Start of the next week
+            $startOfNextWeek = Carbon::parse('next monday');
 
             // Loop through 28 days
             for ($i = 0; $i < 28; $i++) {
-                $date = $startOfWeek->copy()->addDays($i)->toDateString();
+                $date = $startOfNextWeek->copy()->addDays($i)->toDateString();
                 $shiftData = [];
 
                 // Assign shifts for each label to random employees
@@ -222,9 +222,7 @@ class ShiftController extends Controller
                 $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $date)->first();
 
                 if ($existingShift) {
-                    // Merge new shift data with existing shift data
-                    $mergedShiftData = array_merge($existingShift->shift_data, $shiftData);
-                    $existingShift->shift_data = $mergedShiftData;
+                    $existingShift->shift_data = $shiftData;
                     $existingShift->save();
                 } else {
                     // Create a new shift
