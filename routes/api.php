@@ -16,6 +16,7 @@ Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
+Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Templates
@@ -67,4 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 });
+
+
 

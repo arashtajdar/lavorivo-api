@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Rule;
 use App\Models\Shift;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
@@ -186,13 +187,19 @@ class ShiftController extends Controller
     {
         $currentUser = auth()->user();
 
+        // Get all shop IDs owned by the current user
         $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
+
+        // Load rules for all employees
+//        $rules = Rule::all()->groupBy('employee_id'); // Fetch rules grouped by employee
         foreach ($shopIds as $shopId) {
+            $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
+
             // Fetch all shift labels for the shop
             $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
 
             // Fetch all employees of the shop
-            $employees = User::where("employer", $currentUser->id)->get();
+            $employees = User::where('employer', $currentUser->id)->get();
 
             if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
                 return response()->json(['error' => 'No employees or shift labels found'], 400);
@@ -201,25 +208,44 @@ class ShiftController extends Controller
             // Start of the next week
             $startOfNextWeek = Carbon::parse('next monday');
 
+            // Prepare assignment tracking
+            $assignmentCounts = [];
+
             // Loop through 28 days
             for ($i = 0; $i < 28; $i++) {
-                $date = $startOfNextWeek->copy()->addDays($i)->toDateString();
+                $date = $startOfNextWeek->copy()->addDays($i);
+                $dayName = $date->format('l'); // E.g., "Monday"
+                $dateString = $date->toDateString();
                 $shiftData = [];
 
-                // Assign shifts for each label to random employees
+                // Assign shifts for each label
                 foreach ($shiftLabels as $label) {
-                    $randomEmployee = $employees->random();
+                    foreach ($employees as $employee) {
+                        // Check rules for the employee
+                        $employeeRules = $rules->get($employee->id, []);
 
-                    $shiftData[] = [
-                        'label' => $label->label,
-                        'userId' => $randomEmployee->id,
-                        'username' => $randomEmployee->name,
-                        'duration_minutes' => $label->default_duration_minutes ?? 0,
-                    ];
+                        if ($this->violatesRules($employee, $label, $dayName, $assignmentCounts, $employeeRules)) {
+                            continue; // Skip employee if they violate any rule
+                        }
+
+                        // Assign the shift to the employee
+                        $shiftData[] = [
+                            'label' => $label->label,
+                            'userId' => $employee->id,
+                            'username' => $employee->name,
+                            'duration_minutes' => $label->default_duration_minutes ?? 0,
+                        ];
+
+                        // Track assignment counts
+                        $weekStart = $date->startOfWeek()->toDateString();
+                        $assignmentCounts[$employee->id][$weekStart] = ($assignmentCounts[$employee->id][$weekStart] ?? 0) + 1;
+
+                        break; // Move to the next shift label once assigned
+                    }
                 }
 
                 // Check if a shift already exists for this shop and date
-                $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $date)->first();
+                $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $dateString)->first();
 
                 if ($existingShift) {
                     $existingShift->shift_data = $shiftData;
@@ -228,15 +254,48 @@ class ShiftController extends Controller
                     // Create a new shift
                     Shift::create([
                         'shop_id' => $shopId,
-                        'date' => $date,
+                        'date' => $dateString,
                         'shift_data' => $shiftData,
                     ]);
                 }
             }
         }
 
-
         return response()->json(['message' => 'Shifts auto-assigned successfully'], 201);
     }
+
+    private function violatesRules($employee, $label, $dayName, $assignmentCounts, $employeeRules)
+    {
+        foreach ($employeeRules as $rule) {
+            if ($rule->shop_id !== $label->shop_id) {
+                continue; // Skip rules for other shops
+            }
+
+            switch ($rule->rule_type) {
+                case 'exclude_label':
+                    if ($rule->rule_data['label_id'] == $label->id) {
+                        return true;
+                    }
+                    break;
+
+                case 'exclude_days':
+                    if (in_array($dayName, $rule->rule_data['days'])) {
+                        return true;
+                    }
+                    break;
+
+                case 'max_shifts':
+                    $weekStart = Carbon::now()->startOfWeek()->toDateString();
+                    $currentCount = $assignmentCounts[$employee->id][$weekStart] ?? 0;
+                    if ($currentCount >= $rule->rule_data['max_shifts_per_week']) {
+                        return true;
+                    }
+                    break;
+            }
+        }
+
+        return false;
+    }
+
 
 }

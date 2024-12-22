@@ -110,4 +110,16 @@ class ShopController extends Controller
         return response()->json($shops);
     }
 
+    public function usersByShop($shopId)
+    {
+        // Ensure the shop exists
+        $shop = Shop::findOrFail($shopId);
+
+        // Fetch users associated with the shop
+        $users = $shop->users()->get();
+
+        return response()->json($users);
+    }
+
+
 }

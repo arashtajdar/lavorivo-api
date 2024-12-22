@@ -19,4 +19,10 @@ class Rule extends Model
     {
         return $this->belongsTo(User::class, 'employee_id');
     }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
+    }
+
 }

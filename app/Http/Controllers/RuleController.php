@@ -36,6 +36,7 @@ class RuleController extends Controller
     {
         $validated = $request->validate([
             'employee_id' => 'required|exists:users,id',
+            'shop_id' => 'required|exists:shops,id', // Add validation for shop_id
             'rule_type' => 'required|string',
             'rule_data' => 'required|array',
         ]);
@@ -44,6 +45,7 @@ class RuleController extends Controller
 
         return response()->json($rule, 201);
     }
+
 
     /**
      * Display the specified resource.
