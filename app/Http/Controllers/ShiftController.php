@@ -189,7 +189,12 @@ class ShiftController extends Controller
 
         // Get all shop IDs owned by the current user
         $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
-
+        $weekNumber = $request['weekNumber'];
+        if (!$weekNumber){
+            return response()->json(['Error' => 'weekNumber must be defined'], 400);
+        }
+        $start = ($weekNumber - 1) * 7; // Calculate the starting day
+        $end = $weekNumber * 7;         // Calculate the ending day
         // Load rules for all employees
 //        $rules = Rule::all()->groupBy('employee_id'); // Fetch rules grouped by employee
         foreach ($shopIds as $shopId) {
@@ -199,7 +204,8 @@ class ShiftController extends Controller
             $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
 
             // Fetch all employees of the shop
-            $employees = User::where('employer', $currentUser->id)->get();
+            $shop = Shop::findOrFail($shopId);
+            $employees = $shop->users;
 
             if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
                 return response()->json(['error' => 'No employees or shift labels found'], 400);
@@ -211,8 +217,8 @@ class ShiftController extends Controller
             // Prepare assignment tracking
             $assignmentCounts = [];
 
-            // Loop through 28 days
-            for ($i = 0; $i < 28; $i++) {
+
+            for ($i = $start; $i < $end; $i++) {
                 $date = $startOfNextWeek->copy()->addDays($i);
                 $dayName = $date->format('l'); // E.g., "Monday"
                 $dateString = $date->toDateString();
@@ -220,7 +226,8 @@ class ShiftController extends Controller
 
                 // Assign shifts for each label
                 foreach ($shiftLabels as $label) {
-                    foreach ($employees as $employee) {
+                    $shuffledEmployees = $employees->shuffle();
+                    foreach ($shuffledEmployees as $employee) {
                         // Check rules for the employee
                         $employeeRules = $rules->get($employee->id, []);
 
