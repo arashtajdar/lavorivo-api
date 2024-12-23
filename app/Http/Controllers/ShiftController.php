@@ -189,15 +189,21 @@ class ShiftController extends Controller
 
         // Get all shop IDs owned by the current user
         $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
-        $weekNumber = $request['weekNumber'];
-        if (!$weekNumber){
+
+        // Validate week number
+        $weekNumber = $request->get('weekNumber');
+        if (!$weekNumber) {
             return response()->json(['Error' => 'weekNumber must be defined'], 400);
         }
+
+        // Get flag to avoid assigning multiple shifts to the same employee per day
+        $avoidMultipleShiftsPerDay = $request->get('avoidMultipleShifts', false);
+
         $start = ($weekNumber - 1) * 7; // Calculate the starting day
         $end = $weekNumber * 7;         // Calculate the ending day
-        // Load rules for all employees
-//        $rules = Rule::all()->groupBy('employee_id'); // Fetch rules grouped by employee
+
         foreach ($shopIds as $shopId) {
+            // Load rules for the shop
             $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
 
             // Fetch all shift labels for the shop
@@ -216,20 +222,29 @@ class ShiftController extends Controller
 
             // Prepare assignment tracking
             $assignmentCounts = [];
+            $dailyAssignments = []; // Track daily assignments for avoiding multiple shifts per day
 
-
+            // Loop through days
             for ($i = $start; $i < $end; $i++) {
                 $date = $startOfNextWeek->copy()->addDays($i);
                 $dayName = $date->format('l'); // E.g., "Monday"
                 $dateString = $date->toDateString();
                 $shiftData = [];
 
+                // Shuffle employees to randomize assignment
+
                 // Assign shifts for each label
                 foreach ($shiftLabels as $label) {
                     $shuffledEmployees = $employees->shuffle();
+
                     foreach ($shuffledEmployees as $employee) {
                         // Check rules for the employee
                         $employeeRules = $rules->get($employee->id, []);
+
+                        // Avoid assigning multiple shifts per day if the flag is true
+                        if ($avoidMultipleShiftsPerDay && isset($dailyAssignments[$i][$employee->id])) {
+                            continue;
+                        }
 
                         if ($this->violatesRules($employee, $label, $dayName, $assignmentCounts, $employeeRules)) {
                             continue; // Skip employee if they violate any rule
@@ -242,6 +257,9 @@ class ShiftController extends Controller
                             'username' => $employee->name,
                             'duration_minutes' => $label->default_duration_minutes ?? 0,
                         ];
+
+                        // Track daily assignments
+                        $dailyAssignments[$i][$employee->id] = true;
 
                         // Track assignment counts
                         $weekStart = $date->startOfWeek()->toDateString();
