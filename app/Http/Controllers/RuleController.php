@@ -92,4 +92,5 @@ class RuleController extends Controller
         return response()->json(['message' => 'Rule deleted successfully']);
     }
 
+
 }

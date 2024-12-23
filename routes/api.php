@@ -65,8 +65,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auto', [ShiftController::class, 'auto']);
 
     Route::apiResource('rules', RuleController::class);
-
-
 });
 
 
