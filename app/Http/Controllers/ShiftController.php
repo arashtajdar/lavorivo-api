@@ -252,7 +252,10 @@ class ShiftController extends Controller
 
                         // Assign the shift to the employee
                         $shiftData[] = [
-                            'label' => $label->label,
+                            'label' => [
+                                "id" => $label->id,
+                                "name" => $label->label
+                            ],
                             'userId' => $employee->id,
                             'username' => $employee->name,
                             'duration_minutes' => $label->default_duration_minutes ?? 0,
