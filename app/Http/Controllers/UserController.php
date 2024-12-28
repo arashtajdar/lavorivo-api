@@ -30,8 +30,8 @@ class UserController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6',
-                'role' => 'required|integer',
             ]);
+            $validated['role'] = User::USER_ROLE_Customer;
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
