@@ -18,7 +18,11 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
 Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/shops/{shop}/admins', [ShopController::class, 'grantAdminAccess']);
+    Route::delete('/shops/{shop}/admins/{user}', [ShopController::class, 'revokeAdminAccess']);
+    Route::get('/shops/{shop}/isUserAdmin/{user}', [ShopController::class, 'userIsShopAdmin']);
     // Templates
     Route::apiResource('templates', TemplateController::class);
 
@@ -43,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
 
     Route::get('/users/employer', [UserController::class, 'usersByEmployer']);
+    Route::get('/users/listUsersToManage', [UserController::class, 'listUsersToManage']);
 
     Route::get('/users', [UserController::class, 'index']);
 
@@ -62,10 +67,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/shift-labels/{id}', [ShiftLabelController::class, 'update']);
 
 
+
     Route::post('/auto', [ShiftController::class, 'auto']);
 
     Route::apiResource('rules', RuleController::class);
+
+
 });
+
 
 
 

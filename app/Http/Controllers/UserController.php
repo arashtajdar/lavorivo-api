@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -101,6 +102,31 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+
+    public function listUsersToManage()
+    {
+        $currentAdminId = auth()->id();
+
+        // Get all shop IDs where the current admin is either the owner or an admin
+        $shopsOwned = Shop::where('owner', $currentAdminId)->pluck('id')->toArray();
+        $shopsAdmined = DB::table('shop_user')
+            ->where('user_id', $currentAdminId)
+            ->where('role', 2)
+            ->pluck('shop_id')->toArray();
+        $shopIds = array_unique(array_merge($shopsOwned, $shopsAdmined));
+
+        // Get all users linked to these shops, along with their roles
+        $users = User::with(['shops' => function ($query) use ($shopIds) {
+            $query->whereIn('shops.id', $shopIds)->select('shops.id', 'shops.name', 'shop_user.role');
+        }])
+            ->whereHas('shops', function ($query) use ($shopIds) {
+                $query->whereIn('shop_id', $shopIds);
+            })
+            ->get();
+
+        return response()->json($users);
+    }
+
 
 }
 

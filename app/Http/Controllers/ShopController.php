@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ShopController extends Controller
 {
@@ -121,5 +122,57 @@ class ShopController extends Controller
         return response()->json($users);
     }
 
+    public function grantAdminAccess(Request $request, Shop $shop)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $user = User::findOrFail($validated['user_id']);
+
+        // Ensure the user is already part of the shop
+        $existingRelation = $shop->users()->where('users.id', $user->id)->first();
+
+        if (!$existingRelation) {
+            return response()->json(['error' => 'User is not a member of this shop'], 400);
+        }
+
+        // Update or create the admin role in the pivot table
+        $shop->users()->updateExistingPivot($user->id, ['role' => 2]); // 2 for Admin
+
+        return response()->json(['message' => 'Admin access granted successfully'], 200);
+    }
+
+    public function revokeAdminAccess(Shop $shop, User $user)
+    {
+        // Ensure the user is part of the shop
+        $existingRelation = $shop->users()->where('users.id', $user->id)->first();
+
+        if (!$existingRelation) {
+            return response()->json(['error' => 'User is not associated with this shop'], 404);
+        }
+
+        // Check if the user is currently an admin
+        if ($existingRelation->pivot->role !== 2) {
+            return response()->json(['message' => 'User is not an admin'], 400);
+        }
+
+        // Update the role to regular employee (1)
+        $shop->users()->updateExistingPivot($user->id, ['role' => 1]); // 1 for regular employee
+
+        return response()->json(['message' => 'Admin access revoked successfully'], 200);
+    }
+
+    public function userIsShopAdmin(Shop $shop, User $user)
+    {
+        $shopUser = DB::table('shop_user')
+            ->where('shop_id', $shop->getAttribute('id'))
+            ->where('user_id', $user->getAttribute('id'))
+            ->where('role', 2)
+            ->get();
+
+
+        return response()->json($shopUser, 200);
+    }
 
 }
