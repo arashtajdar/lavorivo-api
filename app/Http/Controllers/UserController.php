@@ -85,9 +85,16 @@ class UserController extends Controller
     public function usersByShop($shopId)
     {
         $currentUser = auth()->user();
-
-        if ($currentUser->role !== 2) { // Role 2 = Admin
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $shop = Shop::where('id', $shopId)->firstOrFail();
+        $isShopManager = DB::table('shop_user')
+            ->where('shop_id', $shopId)
+            ->where('user_id', $currentUser->id)
+            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->pluck('user_id')->toArray();
+        if ($shop->owner != $currentUser->id) { // if current user is not shop owner
+            if(!!count($isShopManager)){
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
         }
 
         $shop = Shop::findOrFail($shopId);

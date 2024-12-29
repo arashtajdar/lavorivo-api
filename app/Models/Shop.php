@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Shop extends Model
 {
+    const SHOP_USER_ROLE_CUSTOMER = 3;
+    const SHOP_USER_ROLE_MANAGER = 2;
     use HasFactory;
 
     protected $fillable = ['name', 'location', 'owner'];
