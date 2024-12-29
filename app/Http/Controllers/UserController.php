@@ -124,7 +124,7 @@ class UserController extends Controller
         return response()->json($users);
     }
 
-    public function listUsersToManage2()
+    public function listUsersToManage()
     {
         $currentAdminId = auth()->id();
 
@@ -154,7 +154,7 @@ class UserController extends Controller
 
         // Fetch all users managed by the current user
         $managedUsers = $currentUser->managedUsers()
-            ->with(['managers']) // Eager load creator and managers for optimization
+            ->with(['shops','managers']) // Eager load creator and managers for optimization
             ->get();
 
         // Return the list of managed users as JSON
