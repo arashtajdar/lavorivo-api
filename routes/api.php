@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
 
     Route::get('/users/employer', [UserController::class, 'usersByEmployer']);
-    Route::get('/users/listUsersToManage', [UserController::class, 'listUsersToManage']);
+    Route::get('/users/listUsersToManage', [UserController::class, 'getManagedUsers']);
 
     Route::get('/users', [UserController::class, 'index']);
 

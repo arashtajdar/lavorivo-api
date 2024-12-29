@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -50,24 +51,37 @@ class UserController extends Controller
     public function addEmployee(Request $request)
     {
         try {
+            // Validate input
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email'
             ]);
+
             $validated['password'] = '1234567890';
-            $validated['role'] = 1;
-            $validated['employer'] = auth()->id();
+            $validated['role'] = 1; // Assuming '1' is the role for employees
+            $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
+
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors(), // Returns detailed validation error messages
-            ], 422); // HTTP status code for Unprocessable Entity
+                'errors' => $e->errors(),
+            ], 422);
         }
 
+        // Hash the password
+        $validated['password'] = bcrypt($validated['password']);
 
-        $validated['password'] = bcrypt($validated['password']); // Hash password
-
+        // Create the new user
         $user = User::create($validated);
+
+        // Add the relationship to the `user_manager` table
+        $currentManagerId = auth()->id();
+        DB::table('user_manager')->insert([
+            'manager_id' => $currentManagerId,
+            'user_id' => $user->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         return response()->json($user, 201);
     }
@@ -110,7 +124,7 @@ class UserController extends Controller
         return response()->json($users);
     }
 
-    public function listUsersToManage()
+    public function listUsersToManage2()
     {
         $currentAdminId = auth()->id();
 
@@ -133,7 +147,19 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+    public function getManagedUsers()
+    {
+        // Get the currently authenticated user
+        $currentUser = Auth::user();
 
+        // Fetch all users managed by the current user
+        $managedUsers = $currentUser->managedUsers()
+            ->with(['managers']) // Eager load creator and managers for optimization
+            ->get();
+
+        // Return the list of managed users as JSON
+        return response()->json($managedUsers, 200);
+    }
 
 }
 
