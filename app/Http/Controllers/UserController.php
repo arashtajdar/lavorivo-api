@@ -115,12 +115,12 @@ class UserController extends Controller
         $currentAdminId = auth()->id();
 
         // Get all shop IDs where the current admin is either the owner or an admin
-        $shopsOwned = Shop::where('owner', $currentAdminId)->pluck('id')->toArray();
-        $shopsAdmined = DB::table('shop_user')
+        $ownedShops = Shop::where('owner', $currentAdminId)->pluck('id')->toArray();
+        $ManagedShops = DB::table('shop_user')
             ->where('user_id', $currentAdminId)
-            ->where('role', 2)
+            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
             ->pluck('shop_id')->toArray();
-        $shopIds = array_unique(array_merge($shopsOwned, $shopsAdmined));
+        $shopIds = array_unique(array_merge($ownedShops, $ManagedShops));
 
         // Get all users linked to these shops, along with their roles
         $users = User::with(['shops' => function ($query) use ($shopIds) {
