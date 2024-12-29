@@ -54,11 +54,9 @@ class ShiftLabelController extends Controller
             'shop_id' => 'required|exists:shops,id',
             'label' => 'required|string|max:255',
             'default_duration_minutes' => 'nullable|integer|min:1',
-            'applicable_days' => 'nullable|array',
         ]);
-        $validated['applicable_days'] = $validated['applicable_days'] ?? [];
+        $validated['applicable_days'] = $validated['applicable_days'] ?? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         $currentUser = auth()->user();
-//dd($currentUser->shops()->where('shop_id', $request->shop_id)->toSql());
         // Ensure the user owns the shop
         if (!Shop::where('id', $request->shop_id)->where('owner', $currentUser->id)->exists()) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -70,7 +68,7 @@ class ShiftLabelController extends Controller
             'user_id' => $currentUser->id,
             'label' => $request->label,
             'default_duration_minutes' => $request->default_duration_minutes,
-            'applicable_days' => $validated['applicable_days'],
+            'applicable_days' => json_encode($validated['applicable_days']),
         ]);
 
         return response()->json($shiftLabel, 201);
