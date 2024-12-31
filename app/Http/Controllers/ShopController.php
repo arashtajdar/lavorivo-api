@@ -122,13 +122,9 @@ class ShopController extends Controller
         return response()->json($users);
     }
 
-    public function grantAdminAccess(Request $request, Shop $shop)
+    public function grantAdminAccess(Request $request, Shop $shop, User $user)
     {
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
 
-        $user = User::findOrFail($validated['user_id']);
 
         // Ensure the user is already part of the shop
         $existingRelation = $shop->users()->where('users.id', $user->id)->first();
@@ -138,30 +134,26 @@ class ShopController extends Controller
         }
 
         // Update or create the admin role in the pivot table
-        $shop->users()->updateExistingPivot($user->id, ['role' => 2]); // 2 for Admin
+        $shop->users()->updateExistingPivot($user->id, ['role' => Shop::SHOP_USER_ROLE_MANAGER]); // 2 for Admin
 
         return response()->json(['message' => 'Admin access granted successfully'], 200);
     }
 
-    public function revokeAdminAccess(Shop $shop, User $user)
+    public function revokeAdminAccess(Request $request, Shop $shop, User $user)
     {
-        // Ensure the user is part of the shop
+        // Ensure the user is already part of the shop
         $existingRelation = $shop->users()->where('users.id', $user->id)->first();
 
         if (!$existingRelation) {
-            return response()->json(['error' => 'User is not associated with this shop'], 404);
+            return response()->json(['error' => 'User is not a member of this shop'], 400);
         }
 
-        // Check if the user is currently an admin
-        if ($existingRelation->pivot->role !== 2) {
-            return response()->json(['message' => 'User is not an admin'], 400);
-        }
+        // Update or create the admin role in the pivot table
+        $shop->users()->updateExistingPivot($user->id, ['role' => Shop::SHOP_USER_ROLE_CUSTOMER]);
 
-        // Update the role to regular employee (1)
-        $shop->users()->updateExistingPivot($user->id, ['role' => 1]); // 1 for regular employee
-
-        return response()->json(['message' => 'Admin access revoked successfully'], 200);
+        return response()->json(['message' => 'Admin access granted successfully'], 200);
     }
+
 
     public function userIsShopAdmin(Shop $shop, User $user)
     {

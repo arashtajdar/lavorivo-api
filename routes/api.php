@@ -20,8 +20,8 @@ Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/shops/{shop}/admins', [ShopController::class, 'grantAdminAccess']);
-    Route::delete('/shops/{shop}/admins/{user}', [ShopController::class, 'revokeAdminAccess']);
+    Route::post('/shops/{shop}/grantAdmin/{user}', [ShopController::class, 'grantAdminAccess']);
+    Route::post('/shops/{shop}/revokeAdmin/{user}', [ShopController::class, 'revokeAdminAccess']);
     Route::get('/shops/{shop}/isUserAdmin/{user}', [ShopController::class, 'userIsShopAdmin']);
     // Templates
     Route::apiResource('templates', TemplateController::class);
