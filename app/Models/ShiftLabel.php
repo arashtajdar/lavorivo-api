@@ -10,7 +10,9 @@ class ShiftLabel extends Model
     use HasFactory;
 
     protected $fillable = ['shop_id', 'user_id', 'label', 'default_duration_minutes', 'applicable_days'];
-
+    protected $casts = [
+        'applicable_days' => 'array',
+    ];
     public function shop()
     {
         return $this->belongsTo(Shop::class);
