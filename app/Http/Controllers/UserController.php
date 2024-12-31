@@ -149,17 +149,23 @@ class UserController extends Controller
     }
     public function getManagedUsers()
     {
-        // Get the currently authenticated user
         $currentUser = Auth::user();
 
-        // Fetch all users managed by the current user
         $managedUsers = $currentUser->managedUsers()
-            ->with(['shops','managers']) // Eager load creator and managers for optimization
+            ->with(['shops' => function ($query) {
+                $query->withPivot('role'); // Include role from shop_user table
+            }, 'managers']) // Eager load managers
             ->get();
 
-        // Return the list of managed users as JSON
+        $managedUsers->each(function ($user) {
+            $user->shops->each(function ($shop) {
+                $shop->role = $shop->pivot->role; // Attach the role directly to the shop object
+            });
+        });
+
         return response()->json($managedUsers, 200);
     }
+
 
 }
 

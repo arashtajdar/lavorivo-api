@@ -22,7 +22,11 @@ class Shop extends Model
         return $this->hasMany(ShiftLabel::class);
     }
 
-
+    public function usersWithRole()
+    {
+        return $this->belongsToMany(User::class, 'shop_user')
+            ->withPivot('role'); // Include the 'role' column from the pivot table
+    }
 
 
 }
