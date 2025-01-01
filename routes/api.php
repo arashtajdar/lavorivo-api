@@ -20,6 +20,10 @@ Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user/profile', [UserController::class, 'getProfile']);
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::put('/user/change-password', [UserController::class, 'changePassword']);
+
     Route::patch('/shops/{id}/toggle-state/{state}', [ShopController::class, 'toggleState']);
     Route::post('/shops/{shop}/grantAdmin/{user}', [ShopController::class, 'grantAdminAccess']);
     Route::post('/shops/{shop}/revokeAdmin/{user}', [ShopController::class, 'revokeAdminAccess']);

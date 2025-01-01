@@ -6,6 +6,7 @@ use App\Models\Shop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -166,6 +167,42 @@ class UserController extends Controller
         return response()->json($managedUsers, 200);
     }
 
+    public function getProfile()
+    {
+        return response()->json(auth()->user());
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $user = auth()->user();
+        $user->name = $validated['name'];
+        $user->save();
+
+        return response()->json(['message' => 'Profile updated successfully.']);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json(['error' => 'Current password is incorrect.'], 400);
+        }
+
+        $user->password = Hash::make($validated['new_password']);
+        $user->save();
+
+        return response()->json(['message' => 'Password changed successfully.']);
+    }
 
 }
 
