@@ -33,16 +33,19 @@ class ShiftLabelController extends Controller
     {
         $currentUser = auth()->user();
 
-        // Get all shops owned by the current user
-        $ownedShops = Shop::where('owner', $currentUser->id)->pluck('id');
+        // Get all shops owned by the current user with eager loading of shift labels
+        $ownedShops = Shop::where('owner', $currentUser->id)
+            ->with('shiftLabels') // assuming there's a relationship 'shiftLabels' on Shop model
+            ->get();
 
-        // Fetch shift labels for those shops and group them by shop_id
-        $shiftLabels = ShiftLabel::whereIn('shop_id', $ownedShops)
-            ->get()
-            ->groupBy('shop_id');
+        // Group the shift labels by shop_id
+        $shiftLabels = $ownedShops->flatMap(function ($shop) {
+            return $shop->shiftLabels->groupBy('shop_id');
+        });
 
         return response()->json($shiftLabels);
     }
+
 
 
     /**
