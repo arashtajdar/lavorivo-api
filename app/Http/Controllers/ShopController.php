@@ -166,5 +166,25 @@ class ShopController extends Controller
 
         return response()->json($shopUser, 200);
     }
+    public function toggleState($id, $state)
+    {
+        $currentUser = auth()->user();
+
+        $shop = Shop::where('id', $id)
+            ->where(function ($query) use ($currentUser) {
+                $query->where('owner', $currentUser->id);
+            })
+            ->first();
+
+        if (!$shop) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $shop->state = !!$state;
+        $shop->save();
+
+        return response()->json(['message' => 'Shop state updated successfully', 'state' => $shop->state]);
+    }
+
 
 }
