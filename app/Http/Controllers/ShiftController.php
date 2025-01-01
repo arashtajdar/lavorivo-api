@@ -42,14 +42,28 @@ class ShiftController extends Controller
     public function employeeShifts(Request $request)
     {
         $currentUser = auth()->user();
-        $userShopsOwned = Shop::where('owner', $currentUser->id)->get(['id', 'name']);
 
-        if ($userShopsOwned->isEmpty()) {
+        // Fetch shops owned by the current user, excluding shops with state = 0
+        $userShopsOwned = Shop::where('owner', $currentUser->id)
+            ->where('state', 1)
+            ->get(['id', 'name']);
+
+        // Fetch shops where the current user is a manager
+        $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
+            ->where('shop_user.user_id', $currentUser->id)
+            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->where('shops.state', 1)
+            ->get(['shops.id', 'shops.name']);
+
+        // Combine owned and managed shops
+        $allUserShops = $userShopsOwned->merge($userShopsManaged);
+
+        if ($allUserShops->isEmpty()) {
             return response()->json([]);
         }
 
         // Map shop IDs to their names for quick lookup
-        $shopMap = $userShopsOwned->pluck('name', 'id'); // [shop_id => shop_name]
+        $shopMap = $allUserShops->pluck('name', 'id'); // [shop_id => shop_name]
 
         // Fetch shifts for the user's shops
         $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
