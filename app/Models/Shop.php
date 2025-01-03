@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -27,6 +28,9 @@ class Shop extends Model
         return $this->belongsToMany(User::class, 'shop_user')
             ->withPivot('role'); // Include the 'role' column from the pivot table
     }
-
+    public function getCreatedAtAttribute($value)
+    {
+        return Carbon::parse($value)->format('d/m/y \[H:i\]');
+    }
 
 }
