@@ -32,5 +32,12 @@ class Shop extends Model
     {
         return Carbon::parse($value)->format('d/m/y \[H:i\]');
     }
+    public function managers()
+    {
+        return $this->belongsToMany(User::class, 'shop_user', 'shop_id', 'user_id')
+            ->wherePivot('role', self::SHOP_USER_ROLE_MANAGER)
+            ->withPivot('role');
+    }
+
 
 }

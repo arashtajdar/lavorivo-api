@@ -38,13 +38,37 @@ class RuleController extends Controller
             'employee_id' => 'required|exists:users,id',
             'shop_id' => 'required|exists:shops,id', // Add validation for shop_id
             'rule_type' => 'required|string',
-            'rule_data' => 'required|array',
+            'rule_data' => 'required',
         ]);
 
         $rule = Rule::create($validated);
 
         return response()->json($rule, 201);
     }
+    public function deleteByParams(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'shop_id' => 'required|exists:shops,id', // Validation for shop_id
+            'rule_type' => 'required|string',
+            'rule_data' => 'required',
+        ]);
+
+        $rule = Rule::where('employee_id', $validated['employee_id'])
+            ->where('shop_id', $validated['shop_id'])
+            ->where('rule_type', $validated['rule_type'])
+            ->where('rule_data', $validated['rule_data']) // Ensure rule_data matches
+            ->first();
+
+        if (!$rule) {
+            return response()->json(['error' => 'Rule not found'], 404);
+        }
+
+        $rule->delete(); // Delete the rule
+
+        return response()->json(['message' => 'Rule deleted successfully'], 200);
+    }
+
 
 
     /**

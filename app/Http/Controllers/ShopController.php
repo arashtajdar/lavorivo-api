@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Rule;
+use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -185,6 +187,45 @@ class ShopController extends Controller
 
         return response()->json(['message' => 'Shop state updated successfully', 'state' => $shop->state]);
     }
+
+    public function getShopRules($shopId)
+    {
+        $currentUser = auth()->user();
+
+        // Validate if the user owns or manages the shop
+        $shop = Shop::find($shopId);
+
+//        if (!$shop) {
+//            return response()->json(['error' => 'Unauthorized'], 403);
+//        }
+
+        // Fetch all users of the shop
+        $users = $shop->users()->get();
+        $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
+        $userDataResponse = array();
+        $userData = $users->toArray();
+        foreach ($userData as $user) {
+            $restrictedLabels = Rule::where('shop_id', $shopId)
+                ->where('rule_type', Rule::RULE_TYPE_EXCLUDE_LABELS)
+                ->where('employee_id', $user['id'])
+                ->pluck('rule_data')->toArray();
+
+            $user['shift_labels'] = $shiftLabels->map(function ($label) use ($restrictedLabels) {
+                return array_merge(
+                    $label->toArray(),
+                    ['isRestricted' => in_array($label->id, $restrictedLabels)]
+                );
+            })->toArray();
+            $user['restricted_week_days'] = Rule::where('shop_id', $shopId)
+                ->where('rule_type', Rule::RULE_TYPE_EXCLUDE_DAYS)
+                ->where('employee_id', $user['id'])
+                ->pluck('rule_data')->toArray();
+            $userDataResponse[] = $user;
+        }
+
+        return response()->json($userDataResponse);
+    }
+
 
 
 }

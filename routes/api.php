@@ -79,7 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('rules', RuleController::class);
 
-
+    Route::post('/rules/deleteByParams', [RuleController::class, 'deleteByParams']);
+    Route::get('/shop/{shopId}/rules', [ShopController::class, 'getShopRules']);
 });
 
 

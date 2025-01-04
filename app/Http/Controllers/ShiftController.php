@@ -38,8 +38,248 @@ class ShiftController extends Controller
 
         return response()->json($formattedShifts);
     }
-
     public function employeeShifts(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // Fetch shops owned by the current user, excluding shops with state = 0
+        $userShopsOwned = Shop::where('owner', $currentUser->id)
+            ->where('state', 1)
+            ->get(['id', 'name']);
+
+        // Fetch shops where the current user is a manager
+        $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
+            ->where('shop_user.user_id', $currentUser->id)
+            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->where('shops.state', 1)
+            ->get(['shops.id', 'shops.name']);
+
+        // Combine owned and managed shops
+        $allUserShops = $userShopsOwned->merge($userShopsManaged);
+
+        if ($allUserShops->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Map shop IDs to their names for quick lookup
+        $shopMap = $allUserShops->pluck('name', 'id'); // [shop_id => shop_name]
+
+        // Fetch shifts for the user's shops
+        $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
+        if ($request->has('shop_id')) {
+            $shiftsQuery->where('shop_id', $request->shop_id);
+        }
+
+        $shifts = $shiftsQuery->get();
+
+        // Fetch user information for processing
+        $userMap = User::pluck('name', 'id'); // [user_id => username]
+
+        // Group shifts by shop and then by date
+        $shiftsByShop = $shifts->groupBy('shop_id')->map(function ($shiftsInShop) use ($userMap) {
+            return $shiftsInShop->groupBy('date')->mapWithKeys(function ($shiftsOnDate, $date) use ($userMap) {
+                return [
+                    $date => $shiftsOnDate->map(function ($shift) use ($userMap) {
+                        return collect($shift->shift_data)->map(function ($data) use ($userMap) {
+                            return array_merge($data, [
+                                'username' => $userMap->get($data['userId'], 'Unassigned'),
+                            ]);
+                        })->toArray();
+                    })->flatten(1)->toArray(),
+                ];
+            });
+        });
+
+        // Generate all dates for the next 35 days
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $allDates = [];
+        for ($i = 0; $i < 35; $i++) {
+            $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
+        }
+
+        // Build the response
+        $fullShiftsByShop = $shopMap->map(function ($shopName, $shopId) use ($shiftsByShop, $allDates) {
+            $datesWithShifts = $shiftsByShop->get($shopId, collect());
+
+            // Include all dates, even if they don't have shifts
+            $datesData = collect($allDates)->mapWithKeys(function ($date) use ($datesWithShifts) {
+                return [
+                    $date => $datesWithShifts->get($date, []),
+                ];
+            });
+
+            return array_merge([
+                'shop_id' => $shopId,
+                'shop_name' => $shopName,
+            ], $datesData->toArray());
+        });
+
+        return response()->json($fullShiftsByShop->values());
+    }
+
+    public function employeeShifts3(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // Fetch shops owned by the current user, excluding shops with state = 0
+        $userShopsOwned = Shop::where('owner', $currentUser->id)
+            ->where('state', 1)
+            ->get(['id', 'name']);
+
+        // Fetch shops where the current user is a manager
+        $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
+            ->where('shop_user.user_id', $currentUser->id)
+            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->where('shops.state', 1)
+            ->get(['shops.id', 'shops.name']);
+
+        // Combine owned and managed shops
+        $allUserShops = $userShopsOwned->merge($userShopsManaged);
+
+        if ($allUserShops->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Map shop IDs to their names for quick lookup
+        $shopMap = $allUserShops->pluck('name', 'id'); // [shop_id => shop_name]
+
+        // Fetch shifts for the user's shops
+        $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
+        if ($request->has('shop_id')) {
+            $shiftsQuery->where('shop_id', $request->shop_id);
+        }
+
+        $shifts = $shiftsQuery->get();
+
+        // Fetch user information for processing
+        $userMap = User::pluck('name', 'id'); // [user_id => username]
+
+        // Group shifts by shop
+        $shiftsByShop = $shifts->groupBy('shop_id')
+            ->map(function ($shiftsInShop) use ($userMap) {
+                return $shiftsInShop->groupBy('date')->mapWithKeys(function ($shiftsOnDate, $date) use ($userMap) {
+                    return [
+                        $date => $shiftsOnDate->map(function ($shift) use ($userMap) {
+                            return collect($shift->shift_data)->map(function ($data) use ($userMap) {
+                                return array_merge($data, [
+                                    'username' => $userMap->get($data['userId'], 'Unassigned'),
+                                ]);
+                            })->toArray();
+                        })->flatten(1)->toArray(),
+                    ];
+                });
+            });
+
+        // Generate all dates for the next 35 days
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $allDates = [];
+        for ($i = 0; $i < 35; $i++) {
+            $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
+        }
+
+        // Flatten structure and include all dates at the same level
+        $fullShiftsByShop = $shopMap->map(function ($shopName, $shopId) use ($shiftsByShop, $allDates) {
+            $datesWithShifts = $shiftsByShop->get($shopId, collect());
+
+            // Flatten dates and shift data into the same level
+            $datesData = collect($allDates)->map(function ($date) use ($datesWithShifts) {
+                return [
+                    'date' => $date,
+                    'shift_data' => $datesWithShifts->get($date, []),
+                ];
+            });
+
+            return [
+                'shop_id' => $shopId,
+                'shop_name' => $shopName,
+                'dates' => $datesData,
+            ];
+        });
+
+        return response()->json($fullShiftsByShop->values());
+    }
+
+    public function employeeShifts2(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // Fetch shops owned by the current user, excluding shops with state = 0
+        $userShopsOwned = Shop::where('owner', $currentUser->id)
+            ->where('state', 1)
+            ->get(['id', 'name']);
+
+        // Fetch shops where the current user is a manager
+        $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
+            ->where('shop_user.user_id', $currentUser->id)
+            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->where('shops.state', 1)
+            ->get(['shops.id', 'shops.name']);
+
+        // Combine owned and managed shops
+        $allUserShops = $userShopsOwned->merge($userShopsManaged);
+
+        if ($allUserShops->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Map shop IDs to their names for quick lookup
+        $shopMap = $allUserShops->pluck('name', 'id'); // [shop_id => shop_name]
+
+        // Fetch shifts for the user's shops
+        $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
+        if ($request->has('shop_id')) {
+            $shiftsQuery->where('shop_id', $request->shop_id);
+        }
+
+        $shifts = $shiftsQuery->get();
+
+        // Fetch user information for processing
+        $userMap = User::pluck('name', 'id'); // [user_id => username]
+
+        // Organize shifts by shop
+        $shiftsByShop = $shifts->groupBy('shop_id')
+            ->map(function ($shiftsInShop) use ($userMap) {
+                return $shiftsInShop->groupBy('date')->mapWithKeys(function ($shiftsOnDate, $date) use ($userMap) {
+                    return [
+                        $date => $shiftsOnDate->map(function ($shift) use ($userMap) {
+                            return collect($shift->shift_data)->map(function ($data) use ($userMap) {
+                                return array_merge($data, [
+                                    'username' => $userMap->get($data['userId'], 'Unassigned'),
+                                ]);
+                            })->toArray();
+                        })->flatten(1)->toArray(),
+                    ];
+                });
+            });
+
+        // Generate all dates for the next 35 days
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $allDates = [];
+        for ($i = 0; $i < 35; $i++) {
+            $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
+        }
+
+        // Ensure all dates appear under each shop, even if no shifts exist
+        $fullShiftsByShop = $shopMap->map(function ($shopName, $shopId) use ($shiftsByShop, $allDates) {
+            $datesWithShifts = $shiftsByShop->get($shopId, collect());
+
+            $shiftsByDate = collect($allDates)->mapWithKeys(function ($date) use ($datesWithShifts) {
+                return [
+                    $date => $datesWithShifts->get($date, []),
+                ];
+            });
+
+            return [
+                'shop_id' => $shopId,
+                'shop_name' => $shopName,
+                'shifts_by_date' => $shiftsByDate,
+            ];
+        });
+
+        return response()->json($fullShiftsByShop->values());
+    }
+
+    public function employeeShiftsOld(Request $request)
     {
         $currentUser = auth()->user();
 
