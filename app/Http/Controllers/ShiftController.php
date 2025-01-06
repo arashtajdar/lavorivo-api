@@ -75,6 +75,21 @@ class ShiftController extends Controller
         // Fetch user information for processing
         $userMap = User::pluck('name', 'id'); // [user_id => username]
 
+        // Validate dateFrom and dateTo, or set defaults
+        $dateFrom = $request->has('dateFrom') ? Carbon::parse($request->dateFrom) : Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $dateTo = $request->has('dateTo') ? Carbon::parse($request->dateTo) : $dateFrom->copy()->addDays(34);
+
+        // Ensure dateTo is not earlier than dateFrom
+        if ($dateTo->lt($dateFrom)) {
+            return response()->json(['error' => 'dateTo cannot be earlier than dateFrom'], 400);
+        }
+
+        // Generate all dates in the range
+        $allDates = [];
+        for ($date = $dateFrom->copy(); $date->lte($dateTo); $date->addDay()) {
+            $allDates[] = $date->toDateString();
+        }
+
         // Group shifts by shop and then by date
         $shiftsByShop = $shifts->groupBy('shop_id')->map(function ($shiftsInShop) use ($userMap) {
             return $shiftsInShop->groupBy('date')->mapWithKeys(function ($shiftsOnDate, $date) use ($userMap) {
@@ -89,13 +104,6 @@ class ShiftController extends Controller
                 ];
             });
         });
-
-        // Generate all dates for the next 35 days
-        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $allDates = [];
-        for ($i = 0; $i < 35; $i++) {
-            $allDates[] = $startOfWeek->copy()->addDays($i)->toDateString();
-        }
 
         // Build the response
         $fullShiftsByShop = $shopMap->map(function ($shopName, $shopId) use ($shiftsByShop, $allDates) {
