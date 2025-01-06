@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmailVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        Mail::to("arash.tajdar@gmail.com")->send(new EmailVerification());
+
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
