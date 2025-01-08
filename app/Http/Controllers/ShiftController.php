@@ -550,19 +550,19 @@ class ShiftController extends Controller
                 continue; // Skip rules for other shops
             }
 
-            switch ($rule->rule_type) {
-                case 'exclude_label':
-                    if ($rule->rule_data == $label->id) {
-                        return true;
-                    }
-                    break;
-
-                case 'exclude_days':
-                    if (in_array($dayName, $rule->rule_data['days'])) {
-                        return true;
-                    }
-                    break;
-            }
+//            switch ($rule->rule_type) {
+//                case 'exclude_label':
+//                    if ($rule->rule_data == $label->id) {
+//                        return true;
+//                    }
+//                    break;
+//
+//                case 'exclude_days':
+//                    if (in_array($dayName, $rule->rule_data['days'])) {
+//                        return true;
+//                    }
+//                    break;
+//            }
         }
 
         return false;
