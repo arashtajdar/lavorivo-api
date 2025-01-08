@@ -447,22 +447,21 @@ class ShiftController extends Controller
 
     public function auto(Request $request)
     {
+        $validatedData = $request->validate([
+            'dateFrom' => ['required', 'date', 'before_or_equal:dateTo'], // Mandatory and must be a valid date
+            'dateTo' => ['required', 'date', 'after_or_equal:dateFrom'],  // Mandatory and must be a valid date
+        ]);
+
+        $dateFrom = Carbon::parse($validatedData['dateFrom']);
+        $dateTo = Carbon::parse($validatedData['dateTo']);
+
         $currentUser = auth()->user();
 
         // Get all shop IDs owned by the current user
         $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
 
-        // Validate week number
-        $weekNumber = $request->get('weekNumber');
-        if (!$weekNumber) {
-            return response()->json(['Error' => 'weekNumber must be defined'], 400);
-        }
-
         // Get flag to avoid assigning multiple shifts to the same employee per day
         $avoidMultipleShiftsPerDay = $request->get('avoidMultipleShifts', false);
-
-        $start = ($weekNumber - 1) * 7; // Calculate the starting day
-        $end = $weekNumber * 7;         // Calculate the ending day
 
         foreach ($shopIds as $shopId) {
             // Load rules for the shop
@@ -476,23 +475,19 @@ class ShiftController extends Controller
             $employees = $shop->users;
 
             if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
-                return response()->json(['error' => 'No employees or shift labels found'], 400);
+                continue;
             }
 
-            // Start of the next week
-            $startOfNextWeek = Carbon::parse('next monday');
-
-            // Prepare assignment tracking
-            $assignmentCounts = [];
             $dailyAssignments = []; // Track daily assignments for avoiding multiple shifts per day
 
             // Loop through days
-            for ($i = $start; $i < $end; $i++) {
-                $date = $startOfNextWeek->copy()->addDays($i);
+            $i = 0;
+
+            for ($date = $dateFrom; $date->lte($dateTo); $date->addDay()) {
+                $i++;
                 $dayName = $date->format('l'); // E.g., "Monday"
                 $dateString = $date->toDateString();
                 $shiftData = [];
-
                 // Shuffle employees to randomize assignment
 
                 // Assign shifts for each label
@@ -502,13 +497,12 @@ class ShiftController extends Controller
                     foreach ($shuffledEmployees as $employee) {
                         // Check rules for the employee
                         $employeeRules = $rules->get($employee->id, []);
-
                         // Avoid assigning multiple shifts per day if the flag is true
                         if ($avoidMultipleShiftsPerDay && isset($dailyAssignments[$i][$employee->id])) {
                             continue;
                         }
 
-                        if ($this->violatesRules($employee, $label, $dayName, $assignmentCounts, $employeeRules)) {
+                        if ($this->violatesRules($label, $dayName, $employeeRules)) {
                             continue; // Skip employee if they violate any rule
                         }
 
@@ -522,13 +516,8 @@ class ShiftController extends Controller
                             'username' => $employee->name,
                             'duration_minutes' => $label->default_duration_minutes ?? 0,
                         ];
-
                         // Track daily assignments
                         $dailyAssignments[$i][$employee->id] = true;
-
-                        // Track assignment counts
-                        $weekStart = $date->startOfWeek()->toDateString();
-                        $assignmentCounts[$employee->id][$weekStart] = ($assignmentCounts[$employee->id][$weekStart] ?? 0) + 1;
 
                         break; // Move to the next shift label once assigned
                     }
@@ -554,7 +543,7 @@ class ShiftController extends Controller
         return response()->json(['message' => 'Shifts auto-assigned successfully'], 201);
     }
 
-    private function violatesRules($employee, $label, $dayName, $assignmentCounts, $employeeRules)
+    private function violatesRules($label, $dayName, $employeeRules)
     {
         foreach ($employeeRules as $rule) {
             if ($rule->shop_id !== $label->shop_id) {
@@ -570,14 +559,6 @@ class ShiftController extends Controller
 
                 case 'exclude_days':
                     if (in_array($dayName, $rule->rule_data['days'])) {
-                        return true;
-                    }
-                    break;
-
-                case 'max_shifts':
-                    $weekStart = Carbon::now()->startOfWeek()->toDateString();
-                    $currentCount = $assignmentCounts[$employee->id][$weekStart] ?? 0;
-                    if ($currentCount >= $rule->rule_data['max_shifts_per_week']) {
                         return true;
                     }
                     break;
