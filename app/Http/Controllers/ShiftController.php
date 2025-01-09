@@ -38,6 +38,37 @@ class ShiftController extends Controller
 
         return response()->json($formattedShifts);
     }
+
+    public function removeShift(Request $request)
+    {
+        // Validate the incoming request data
+        $validatedData = $request->validate([
+            'shopId' => 'required|integer|exists:shops,id',
+            'date' => 'required|date',
+            'shiftData' => 'array',
+        ]);
+
+        try {
+            // Find the shift by shopId and date using Eloquent
+            $shift = Shift::where('shop_id', $validatedData['shopId'])
+                ->where('date', $validatedData['date'])
+                ->first();
+
+            // If no shift is found, return an error response
+            if (!$shift) {
+                return response()->json(['error' => 'Shift not found.'], 404);
+            }
+
+            // Update the shift_data column
+            $shift->shift_data = $validatedData['shiftData'];
+            $shift->save();
+
+            return response()->json(['message' => 'Shift updated successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while updating the shift.', 'details' => $e->getMessage()], 500);
+        }
+    }
+
     public function employeeShifts(Request $request)
     {
         $currentUser = auth()->user();
