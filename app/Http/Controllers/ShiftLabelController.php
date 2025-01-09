@@ -71,7 +71,7 @@ class ShiftLabelController extends Controller
             'user_id' => $currentUser->id,
             'label' => $request->label,
             'default_duration_minutes' => $request->default_duration_minutes,
-            'applicable_days' => json_encode($validated['applicable_days']),
+            'applicable_days' => $validated['applicable_days'],
         ]);
 
         return response()->json($shiftLabel, 201);
