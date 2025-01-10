@@ -131,4 +131,24 @@ class ShiftLabelController extends Controller
         return response()->json(['message' => 'Shift label deleted successfully']);
     }
 
+    public function updateActiveStatus(Request $request, $id)
+    {
+        // Validate the request to ensure 'is_active' is a boolean
+        $request->validate([
+            'is_active' => 'required|boolean',
+        ]);
+
+        // Find the shift label by its ID
+        $shiftLabel = ShiftLabel::findOrFail($id);
+
+        // Update the 'is_active' status based on the request input
+        $shiftLabel->is_active = $request->is_active;
+
+        // Save the updated status
+        $shiftLabel->save();
+
+        // Return the updated shift label
+        return response()->json($shiftLabel);
+    }
+
 }

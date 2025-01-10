@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/rules/deleteByParams', [RuleController::class, 'deleteByParams']);
     Route::get('/shop/{shopId}/rules', [ShopController::class, 'getShopRules']);
+    Route::patch('shift-labels/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
 });
 
 
