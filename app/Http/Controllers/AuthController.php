@@ -6,6 +6,7 @@ use App\Mail\EmailVerification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -38,11 +39,16 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         // Validate the request data
-        $request->validate([
+        $validate = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
         ]);
+
+        $creationRequest = DB::table('user_creation_requests')
+            ->where('email', $validate['email'])->first();
+
+
 
         // Create the user
         $user = User::create([
@@ -50,7 +56,12 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password), // Hash the password
         ]);
-
+        if($creationRequest){
+            DB::table('user_manager')->insert([
+                'user_id' => $user->id,
+                'manager_id' => $creationRequest->requested_by,
+            ]);
+        }
         // Generate token
         $token = $user->createToken('Personal Access Token')->plainTextToken;
 
