@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\ManagerRemovedUser;
 use App\Mail\ManagerVerification;
+use App\Mail\RequestToRegister;
 use App\Models\User;
 use App\Models\Shop;
 use Exception;
@@ -74,13 +75,15 @@ class UserController extends Controller
     }
     public function addEmployee(Request $request)
     {
+        $validated = $request->validate([
+            'email' => 'required|email'
+        ]);
+        $currentManagerId = auth()->id();
+
         try {
-            $validated = $request->validate([
-                'email' => 'required|email'
-            ]);
+
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
-                $currentManagerId = auth()->id();
                 $userManager = DB::table('user_manager')
                     ->where(['manager_id' => $currentManagerId,'user_id' => $user->id]);
                 if(!$userManager->first()){
@@ -97,30 +100,20 @@ class UserController extends Controller
                     ['message' => 'Request sent! you should wait for customer to verify the request.'],
                     201);
             } else {
-                dd('create user');
-
-                $validated['password'] = '1234567890';
-                $validated['role'] = 1; // Assuming '1' is the role for employees
-                $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
-                // Hash the password
-                $validated['password'] = bcrypt($validated['password']);
-
-                // Create the new user
-                $user = User::create($validated);
-
-                // Add the relationship to the `user_manager` table
-                $currentManagerId = auth()->id();
-                DB::table('user_manager')->insert([
-                    'manager_id' => $currentManagerId,
-                    'user_id' => $user->id,
-                    'is_active' => false,
+                DB::table('user_creation_requests')->insert([
+                    'requested_by' => $currentManagerId,
+                    'email' => $validated['email'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                Mail::to("arash.tajdar@gmail.com")->send(new RequestToRegister());
+                return response()->json(
+                    ['message' => 'USER NOT FOUND! Request sent to the email!'],
+                    201);
             }
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => 'Failed to add the user',
                 'errors' => $e->errors(),
             ], 422);
         }
