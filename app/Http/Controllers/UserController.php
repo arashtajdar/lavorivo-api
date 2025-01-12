@@ -1,12 +1,16 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use App\Mail\ManagerRemovedUser;
+use App\Mail\ManagerVerification;
 use App\Models\User;
 use App\Models\Shop;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -49,19 +53,71 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
+    public function removeEmployee(Request $request){
+        try {
+            $currentManagerId = auth()->id();
+            $validated = $request->validate([
+                'user_id' => 'required'
+            ]);
+            $userId = $validated['user_id'];
+            DB::table('user_manager')->where(
+                ['manager_id'=> $currentManagerId,'user_id'=>$userId]
+            )->delete();
+            Mail::to("arash.tajdar@gmail.com")->send(new ManagerRemovedUser());
+            return response()->json(
+                ['message' => 'User removed!'],
+                201);
+        }catch (Exception $e) {
+            //var_dump($e->getMessage());
+        }
+
+    }
     public function addEmployee(Request $request)
     {
         try {
-            // Validate input
             $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email'
+                'email' => 'required|email'
             ]);
+            $user = User::firstWhere('email', $validated['email']);
+            if ($user) {
+                $currentManagerId = auth()->id();
+                $userManager = DB::table('user_manager')
+                    ->where(['manager_id' => $currentManagerId,'user_id' => $user->id]);
+                if(!$userManager->first()){
+                    DB::table('user_manager')->insert([
+                        'manager_id' => $currentManagerId,
+                        'user_id' => $user->id,
+                        'is_active' => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                Mail::to("arash.tajdar@gmail.com")->send(new ManagerVerification());
+                return response()->json(
+                    ['message' => 'Request sent! you should wait for customer to verify the request.'],
+                    201);
+            } else {
+                dd('create user');
 
-            $validated['password'] = '1234567890';
-            $validated['role'] = 1; // Assuming '1' is the role for employees
-            $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
+                $validated['password'] = '1234567890';
+                $validated['role'] = 1; // Assuming '1' is the role for employees
+                $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
+                // Hash the password
+                $validated['password'] = bcrypt($validated['password']);
 
+                // Create the new user
+                $user = User::create($validated);
+
+                // Add the relationship to the `user_manager` table
+                $currentManagerId = auth()->id();
+                DB::table('user_manager')->insert([
+                    'manager_id' => $currentManagerId,
+                    'user_id' => $user->id,
+                    'is_active' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -69,20 +125,6 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Hash the password
-        $validated['password'] = bcrypt($validated['password']);
-
-        // Create the new user
-        $user = User::create($validated);
-
-        // Add the relationship to the `user_manager` table
-        $currentManagerId = auth()->id();
-        DB::table('user_manager')->insert([
-            'manager_id' => $currentManagerId,
-            'user_id' => $user->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
 
         return response()->json($user, 201);
     }
@@ -107,7 +149,7 @@ class UserController extends Controller
             ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
             ->pluck('user_id')->toArray();
         if ($shop->owner != $currentUser->id) { // if current user is not shop owner
-            if(!!count($isShopManager)){
+            if (!!count($isShopManager)) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
         }
@@ -148,23 +190,28 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+
     public function getManagedUsers()
     {
-        $currentUser = Auth::user();
+        $currentManagerId = auth()->id();
+        $employees = DB::table('user_manager')->where('manager_id' , $currentManagerId)->get()->toArray();
 
-        $managedUsers = $currentUser->managedUsers()
-            ->with(['shops' => function ($query) {
-                $query->withPivot('role'); // Include role from shop_user table
-            }, 'managers']) // Eager load managers
-            ->get();
+        $res = [];
+        foreach ($employees as $employee) {
+            $response = [];
+            $userId = $employee->user_id;
 
-        $managedUsers->each(function ($user) {
-            $user->shops->each(function ($shop) {
-                $shop->role = $shop->pivot->role; // Attach the role directly to the shop object
-            });
-        });
+            $response['id'] = $userId;
+            $response['is_active'] = $employee->is_active;
+            $user = User::where('id',$userId)->with('shops')->first();
+            $response['name'] = $user->name;
+            $response['email'] = $user->email;
+            $response['email_verified_at'] = $user->email_verified_at;
+            $response['shops'] = $user->shops;
+            $res[] = $response;
 
-        return response()->json($managedUsers, 200);
+        }
+        return response()->json($res, 200);
     }
 
     public function getProfile()
