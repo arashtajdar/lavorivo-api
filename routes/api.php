@@ -56,6 +56,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/employer', [UserController::class, 'usersByEmployer']);
     Route::get('/users/listUsersToManage', [UserController::class, 'getManagedUsers']);
 
+    Route::get('/user-managers', [UserController::class, 'getManagers']);
+    Route::post('/accept-manager', [UserController::class, 'acceptManager']);
+    Route::post('/reject-manager', [UserController::class, 'rejectManager']);
+
+    Route::get('/user-managers', [UserController::class, 'getManagers']);
     Route::get('/users', [UserController::class, 'index']);
 
     Route::get('/users/{id}', [UserController::class, 'show']);

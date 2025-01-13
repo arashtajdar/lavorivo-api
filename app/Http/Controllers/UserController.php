@@ -54,7 +54,8 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
-    public function removeEmployee(Request $request){
+    public function removeEmployee(Request $request)
+    {
         try {
             $currentManagerId = auth()->id();
             $validated = $request->validate([
@@ -62,17 +63,18 @@ class UserController extends Controller
             ]);
             $userId = $validated['user_id'];
             DB::table('user_manager')->where(
-                ['manager_id'=> $currentManagerId,'user_id'=>$userId]
+                ['manager_id' => $currentManagerId, 'user_id' => $userId]
             )->delete();
             Mail::to("arash.tajdar@gmail.com")->send(new ManagerRemovedUser());
             return response()->json(
                 ['message' => 'User removed!'],
                 201);
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             //var_dump($e->getMessage());
         }
 
     }
+
     public function addEmployee(Request $request)
     {
         $validated = $request->validate([
@@ -85,8 +87,8 @@ class UserController extends Controller
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
                 $userManager = DB::table('user_manager')
-                    ->where(['manager_id' => $currentManagerId,'user_id' => $user->id]);
-                if(!$userManager->first()){
+                    ->where(['manager_id' => $currentManagerId, 'user_id' => $user->id]);
+                if (!$userManager->first()) {
                     DB::table('user_manager')->insert([
                         'manager_id' => $currentManagerId,
                         'user_id' => $user->id,
@@ -187,7 +189,7 @@ class UserController extends Controller
     public function getManagedUsers()
     {
         $currentManagerId = auth()->id();
-        $employees = DB::table('user_manager')->where('manager_id' , $currentManagerId)->get()->toArray();
+        $employees = DB::table('user_manager')->where('manager_id', $currentManagerId)->get()->toArray();
 
         $res = [];
         foreach ($employees as $employee) {
@@ -196,7 +198,7 @@ class UserController extends Controller
 
             $response['id'] = $userId;
             $response['is_active'] = $employee->is_active;
-            $user = User::where('id',$userId)->with('shops')->first();
+            $user = User::where('id', $userId)->with('shops')->first();
             $response['name'] = $user->name;
             $response['email'] = $user->email;
             $response['email_verified_at'] = $user->email_verified_at;
@@ -243,6 +245,96 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Password changed successfully.']);
     }
+
+    public function getManagers()
+    {
+        $currentUserId = auth()->id(); // Get the logged-in user's ID
+
+        try {
+            // Fetch managers for the current user
+            $managers = DB::table('user_manager')
+                ->join('users', 'user_manager.manager_id', '=', 'users.id') // Join to get manager details
+                ->where('user_manager.user_id', $currentUserId) // Filter by the user ID
+                ->select(
+                    'user_manager.id', // ID from the user_manager table
+                    'user_manager.manager_id',
+                    'user_manager.is_active',
+                    'users.id as user_id',
+                    'users.name as manager_name',
+                    'users.email as manager_email'
+                )
+                ->get();
+
+            // Transform data to match the desired structure
+            $response = $managers->map(function ($manager) {
+                return [
+                    'id' => $manager->id,
+                    'manager_id' => $manager->manager_id,
+                    'is_active' => $manager->is_active,
+                    'manager' => [
+                        'id' => $manager->user_id,
+                        'name' => $manager->manager_name,
+                        'email' => $manager->manager_email,
+                    ],
+                ];
+            });
+
+            return response()->json($response, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch managers.', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function acceptManager(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:users,id'
+        ]);
+        $id = $validated['id'];
+        try {
+            // Find the record in the user_manager table
+            $userManager = DB::table('user_manager')->where('id', $id)->first();
+
+            if (!$userManager) {
+                return response()->json(['error' => 'Record not found.'], 404);
+            }
+
+            // Update is_active to 1
+            DB::table('user_manager')
+                ->where('id', $id)
+                ->update(['is_active' => 1]);
+
+            return response()->json(['message' => 'Manager accepted successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to accept manager.', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function rejectManager(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:users,id'
+        ]);
+        $id = $validated['id'];
+        try {
+            // Find the record in the user_manager table
+            $userManager = DB::table('user_manager')->where('id', $id)->first();
+
+            if (!$userManager) {
+                return response()->json(['error' => 'Record not found.'], 404);
+            }
+
+            // Update is_active to 1
+            DB::table('user_manager')
+                ->where('id', $id)
+                ->update(['is_active' => 0]);
+
+            return response()->json(['message' => 'Manager rejected successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to reject manager.', 'message' => $e->getMessage()], 500);
+        }
+    }
+
 
 }
 
