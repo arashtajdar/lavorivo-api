@@ -53,10 +53,10 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password), // Hash the password
         ]);
+        $user->sendEmailVerificationNotification();
 
         // Generate token
         $token = $user->createToken('Personal Access Token')->plainTextToken;
-        event(new Registered($user));
         // Return response
         return response()->json([
             'user' => $user,

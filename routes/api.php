@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\ScheduleController;
@@ -9,17 +10,63 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TemplateDayController;
 use App\Http\Controllers\UserController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
 Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 
 
-Route::middleware('auth:sanctum')->group(function () {
+
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
+    $user = User::find($id);
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    if (!hash_equals($hash, sha1($user->email))) {
+        return response()->json(['message' => 'Invalid verification link'], 400);
+    }
+
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified']);
+    }
+
+    $user->markEmailAsVerified();
+
+    return response()->json(['message' => 'Email verified successfully']);
+})->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $user = auth()->user();
+
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified']);
+    }
+
+    $user->sendEmailVerificationNotification();
+
+    return response()->json(['message' => 'Verification link sent']);
+})->middleware(['auth:sanctum', 'throttle:6,1']);
+
+
+Route::get('/email/verify/check', function (Request $request) {
+    return response()->json([
+        'verified' => $request->user()->hasVerifiedEmail(),
+        'email' => $request->user()->email
+    ]);
+})->middleware('auth:sanctum');
+
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/user/profile', [UserController::class, 'getProfile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::put('/user/change-password', [UserController::class, 'changePassword']);
