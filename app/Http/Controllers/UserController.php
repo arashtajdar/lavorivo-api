@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Mail\ManagerRemovedUser;
 use App\Mail\ManagerVerification;
+use App\Mail\NewEmployeeRegistration;
 use App\Mail\RequestToRegister;
 use App\Models\User;
 use App\Models\Shop;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -102,7 +106,9 @@ class UserController extends Controller
                     ['message' => 'Request sent! you should wait for customer to verify the request.'],
                     201);
             } else {
-                $validated['password'] = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'), 0, 16);
+                $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'), 0, 8);
+
+                $validated['password'] = bcrypt($rawPassword);
                 $validated['role'] = 1; // Assuming '1' is the role for employees
                 $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
                 // Hash the password
@@ -120,9 +126,21 @@ class UserController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                Mail::to("arash.tajdar@gmail.com")->send(new RequestToRegister());
+// Generate verification URL
+                $verificationUrl = URL::temporarySignedRoute(
+                    'verification.verify',
+                    Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
+                    [
+                        'id' => $user->id,
+                        'hash' => sha1($user->email),
+                    ]
+                );
+
+                // Send email with password and verification link
+                Mail::to($validated['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
+
                 return response()->json(
-                    ['message' => 'USER NOT FOUND! Request sent to the email!'],
+                    ['message' => 'Account created and email sent with credentials!'],
                     201);
             }
         } catch (ValidationException $e) {
