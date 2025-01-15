@@ -110,6 +110,7 @@ class UserController extends Controller
 
                 $validated['password'] = bcrypt($rawPassword);
                 $validated['role'] = 1; // Assuming '1' is the role for employees
+                $validated['name'] = 'newUser' . substr(str_shuffle('0123456789'), 0, 8); // Assuming '1' is the role for employees
                 $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
                 // Hash the password
                 $validated['password'] = bcrypt($validated['password']);
