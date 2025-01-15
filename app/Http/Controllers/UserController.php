@@ -102,9 +102,21 @@ class UserController extends Controller
                     ['message' => 'Request sent! you should wait for customer to verify the request.'],
                     201);
             } else {
-                DB::table('user_creation_requests')->insert([
-                    'requested_by' => $currentManagerId,
-                    'email' => $validated['email'],
+                $validated['password'] = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'), 0, 16);
+                $validated['role'] = 1; // Assuming '1' is the role for employees
+                $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
+                // Hash the password
+                $validated['password'] = bcrypt($validated['password']);
+
+                // Create the new user
+                $user = User::create($validated);
+
+                // Add the relationship to the `user_manager` table
+                $currentManagerId = auth()->id();
+                DB::table('user_manager')->insert([
+                    'manager_id' => $currentManagerId,
+                    'user_id' => $user->id,
+                    'is_active' => false,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
