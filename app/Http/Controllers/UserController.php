@@ -107,7 +107,7 @@ class UserController extends Controller
                     201);
             } else {
                 $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'), 0, 8);
-
+                $rawPassword = "pass123";
                 $validated['password'] = bcrypt($rawPassword);
                 $validated['role'] = 1; // Assuming '1' is the role for employees
                 $validated['name'] = 'newUser' . substr(str_shuffle('0123456789'), 0, 8); // Assuming '1' is the role for employees
