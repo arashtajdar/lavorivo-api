@@ -22,7 +22,6 @@ class VerifyEmailNotification extends VerifyEmail
             ]
         );
 
-        // Remove /api from the URL if it exists
         return str_replace('/api/api/', '/api/', $prefix . '/api' . parse_url($temporarySignedURL, PHP_URL_PATH) . '?' . parse_url($temporarySignedURL, PHP_URL_QUERY));
     }
 
@@ -31,9 +30,11 @@ class VerifyEmailNotification extends VerifyEmail
         $verificationUrl = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
-            ->subject('Verify Email Address')
-            ->line('Please click the button below to verify your email address.')
-            ->action('Verify Email Address', $verificationUrl)
-            ->line('If you did not create an account, no further action is required.');
+            ->subject('Welcome to ' . config('app.name') . '! Verify Your Email')
+            ->view('emails.verify-email', [  // Changed from markdown to view
+                'url' => $verificationUrl,
+                'user' => $notifiable,
+                'count' => config('auth.verification.expire', 60)
+            ]);
     }
 }
