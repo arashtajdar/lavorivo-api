@@ -106,7 +106,7 @@ class UserController extends Controller
                     ['message' => 'Request sent! you should wait for customer to verify the request.'],
                     201);
             } else {
-                $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*'), 0, 8);
+                $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8);
                 $validated['password'] = bcrypt($rawPassword);
                 $validated['role'] = 1; // Assuming '1' is the role for employees
                 $validated['name'] = 'newUser' . substr(str_shuffle('0123456789'), 0, 8); // Assuming '1' is the role for employees
@@ -316,7 +316,7 @@ class UserController extends Controller
     public function acceptManager(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|exists:users,id'
+            'id' => 'required|exists:user_manager,id'
         ]);
         $id = $validated['id'];
         try {
@@ -341,7 +341,7 @@ class UserController extends Controller
     public function rejectManager(Request $request)
     {
         $validated = $request->validate([
-            'id' => 'required|exists:users,id'
+            'id' => 'required|exists:user_manager,id'
         ]);
         $id = $validated['id'];
         try {

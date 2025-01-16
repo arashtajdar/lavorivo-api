@@ -123,4 +123,5 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
     'frontend_url' => env('FRONTEND_URL', 'http://127.0.0.1/api'),
+    'frontend_login_url' => env('FRONTEND_LOGIN_URL', 'http://127.0.0.1/auth/login'),
 ];

@@ -28,7 +28,6 @@ use Illuminate\Support\Facades\Hash;
 
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::find($id);
-
     if (!$user) {
         return response()->json(['message' => 'User not found'], 404);
     }
@@ -38,17 +37,15 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
     if ($user->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Email already verified']);
+        return redirect(config('app.frontend_login_url'));
     }
 
     $user->markEmailAsVerified();
-
-    return response()->json(['message' => 'Email verified successfully']);
+    return redirect(config('app.frontend_login_url'));
 })->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
     $user = auth()->user();
-
     if ($user->hasVerifiedEmail()) {
         return response()->json(['message' => 'Email already verified']);
     }
