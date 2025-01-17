@@ -363,6 +363,22 @@ class UserController extends Controller
         }
     }
 
+    public static function CheckIfUserCanManageThisShop($userId, $shopId){
+        $ownThisShop = Shop::where([
+            'id'=> $shopId,
+            'owner'=> $userId
+        ])->first();
+        $manageThisShop = DB::table('shop_user')
+            ->where('shop_id', $shopId)
+            ->where('user_id', $userId)
+            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->first();
+        if (!$ownThisShop && !$manageThisShop){
+            return false;
+        }
+        return true;
+    }
+
 
 }
 

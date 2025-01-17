@@ -8,6 +8,7 @@ use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ShiftController extends Controller
 {
@@ -47,7 +48,10 @@ class ShiftController extends Controller
             'date' => 'required|date',
             'shiftData' => 'array',
         ]);
-
+        $currentUser = auth()->user();
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $validatedData['shopId'])) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
+        }
         try {
             // Find the shift by shopId and date using Eloquent
             $shift = Shift::where('shop_id', $validatedData['shopId'])
@@ -81,7 +85,7 @@ class ShiftController extends Controller
         // Fetch shops where the current user is a manager
         $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
             ->where('shop_user.user_id', $currentUser->id)
-            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
+//            ->where('shop_user.role', Shop::SHOP_USER_ROLE_MANAGER)
             ->where('shops.state', 1)
             ->get(['shops.id', 'shops.name']);
 
@@ -415,6 +419,10 @@ class ShiftController extends Controller
             'date' => 'required|date',
             'shift_data' => 'required|array',
         ]);
+        $currentUser = auth()->user();
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $validatedRequest['shopId'])) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
+        }
         $previousShiftInDb = Shift::query()->where(
             [
                 'shop_id'=> $validatedRequest['shop_id'],
@@ -495,6 +503,9 @@ class ShiftController extends Controller
         $avoidMultipleShiftsPerDay = $request->get('avoidMultipleShifts', false);
 
         foreach ($shopIds as $shopId) {
+            if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId)) {
+                continue;
+            }
             // Load rules for the shop
             $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
 
