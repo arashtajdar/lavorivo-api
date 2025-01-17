@@ -596,12 +596,11 @@ class ShiftController extends Controller
             }
 
             switch ($rule->rule_type) {
-//                case 'exclude_label':
-//                    if ($rule->rule_data == $label->id) {
-//                        return true;
-//                    }
-//                    break;
-
+                case 'exclude_label':
+                    if ($rule->rule_data == $label->id) {
+                        return true;
+                    }
+                    break;
                 case 'exclude_days':
                     $dayIndex = array_search($dayName, Rule::RULE_WEEK_DAYS);
                     if ($dayIndex === $rule->rule_data) {
