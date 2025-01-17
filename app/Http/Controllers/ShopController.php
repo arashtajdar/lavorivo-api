@@ -8,6 +8,7 @@ use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function Symfony\Component\Translation\t;
 
 class ShopController extends Controller
 {
@@ -108,7 +109,37 @@ class ShopController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
-        $shops = Shop::where('owner', auth()->id())->get();
+
+        $userId = $user->id;
+
+        // Retrieve manager and customer shop IDs
+        $ShopsManagerIds = DB::table('shop_user')
+            ->where('user_id', $userId)
+            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
+            ->pluck('shop_id')
+            ->toArray();
+
+        $ShopsCustomerIds = DB::table('shop_user')
+            ->where('user_id', $userId)
+            ->where('role', Shop::SHOP_USER_ROLE_CUSTOMER)
+            ->pluck('shop_id')
+            ->toArray();
+
+        // Retrieve owned shops
+        $shopsOwned = Shop::where('owner', $userId)->get()->toArray();
+
+        // Merge all shops
+        $allShops = Shop::whereIn('id', array_merge($ShopsManagerIds, $ShopsCustomerIds))
+            ->orWhere('owner', $userId)
+            ->get();
+
+        // Add manager and owner flags
+        $shops = $allShops->map(function ($shop) use ($userId, $ShopsManagerIds) {
+            return array_merge($shop->toArray(), [
+                'manager' => in_array($shop->id, $ShopsManagerIds),
+                'owner' => $shop->owner == $userId,
+            ]);
+        });
 
         return response()->json($shops);
     }
