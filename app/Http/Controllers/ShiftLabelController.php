@@ -18,16 +18,30 @@ class ShiftLabelController extends Controller
         ]);
 
         $currentUser = auth()->user();
-
-        // Ensure the user owns the shop
-        if (!Shop::where('id', $request->shop_id)->where('owner', $currentUser->id)->exists()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $request->shop_id)) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
 
-        $shiftLabels = ShiftLabel::where('shop_id', $request->shop_id)->get();
+        $shiftLabels = ShiftLabel::where(['shop_id'=> $request->shop_id])->get();
         return response()->json($shiftLabels);
     }
+    public function getAllActive(Request $request)
+    {
+        $request->validate([
+            'shop_id' => 'required|exists:shops,id',
+        ]);
 
+        $currentUser = auth()->user();
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $request->shop_id)) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
+        }
+
+        $shiftLabels = ShiftLabel::where([
+            'shop_id'=> $request->shop_id,
+            'is_active'=> true
+        ])->get();
+        return response()->json($shiftLabels);
+    }
 
     public function getAllShiftLabels()
     {
@@ -103,8 +117,8 @@ class ShiftLabelController extends Controller
 
         // Ensure the user is authorized to update this shift label
         $currentUser = auth()->user();
-        if (!Shop::where('id', $shiftLabel->shop_id)->where('owner', $currentUser->id)->exists()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shiftLabel->shop_id)) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
 
         $validated = $request->validate([

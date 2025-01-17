@@ -119,6 +119,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     //shift labels
     Route::get('/all-shift-labels', [ShiftLabelController::class, 'getAllShiftLabels']);
     Route::get('/shift-labels', [ShiftLabelController::class, 'index']);
+    Route::get('/active-shift-labels', [ShiftLabelController::class, 'getAllActive']);
     Route::post('/shifts/removeByParams', [ShiftController::class, 'removeShift']);
     Route::post('/shift-labels', [ShiftLabelController::class, 'store']);
     Route::delete('/shift-labels/{id}', [ShiftLabelController::class, 'destroy']);
