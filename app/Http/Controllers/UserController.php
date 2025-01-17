@@ -66,9 +66,7 @@ class UserController extends Controller
                 'user_id' => 'required'
             ]);
             $userId = $validated['user_id'];
-            DB::table('user_manager')->where(
-                ['manager_id' => $currentManagerId, 'user_id' => $userId]
-            )->delete();
+
             Mail::to("arash.tajdar@gmail.com")->send(new ManagerRemovedUser());
             return response()->json(
                 ['message' => 'User removed!'],
@@ -82,6 +80,7 @@ class UserController extends Controller
     public function addEmployee(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'email' => 'required|email'
         ]);
         $currentManagerId = auth()->id();
@@ -90,41 +89,20 @@ class UserController extends Controller
 
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
-                $userManager = DB::table('user_manager')
-                    ->where(['manager_id' => $currentManagerId, 'user_id' => $user->id]);
-                if (!$userManager->first()) {
-                    DB::table('user_manager')->insert([
-                        'manager_id' => $currentManagerId,
-                        'user_id' => $user->id,
-                        'is_active' => false,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+                // email already exist
                 Mail::to("arash.tajdar@gmail.com")->send(new ManagerVerification());
                 return response()->json(
-                    ['message' => 'Request sent! you should wait for customer to verify the request.'],
+                    ['message' => 'Email already Exist!'],
                     201);
             } else {
                 $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8);
                 $validated['password'] = bcrypt($rawPassword);
+                $validated['employer'] = $currentManagerId;
                 $validated['role'] = 1; // Assuming '1' is the role for employees
-                $validated['name'] = 'newUser' . substr(str_shuffle('0123456789'), 0, 8); // Assuming '1' is the role for employees
-                $validated['created_by'] = auth()->id(); // Set 'created_by' to the current authenticated user
 
                 // Create the new user
                 $user = User::create($validated);
 
-                // Add the relationship to the `user_manager` table
-                $currentManagerId = auth()->id();
-                DB::table('user_manager')->insert([
-                    'manager_id' => $currentManagerId,
-                    'user_id' => $user->id,
-                    'is_active' => false,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-// Generate verification URL
                 $verificationUrl = URL::temporarySignedRoute(
                     'verification.verify',
                     Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
@@ -147,9 +125,6 @@ class UserController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
-
-
-        return response()->json($user, 201);
     }
 
     // Delete a user
@@ -192,45 +167,18 @@ class UserController extends Controller
 
     public function listUsersToManage()
     {
-        $currentAdminId = auth()->id();
-
-        // Get all shop IDs where the current admin is either the owner or an admin
-        $ownedShops = Shop::where('owner', $currentAdminId)->pluck('id')->toArray();
-        $ManagedShops = DB::table('shop_user')
-            ->where('user_id', $currentAdminId)
-            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
-            ->pluck('shop_id')->toArray();
-        $shopIds = array_unique(array_merge($ownedShops, $ManagedShops));
-
-        // Get all users linked to these shops, along with their roles
-        $users = User::with(['shops' => function ($query) use ($shopIds) {
-            $query->whereIn('shops.id', $shopIds)->select('shops.id', 'shops.name', 'shop_user.role');
-        }])
-            ->whereHas('shops', function ($query) use ($shopIds) {
-                $query->whereIn('shop_id', $shopIds);
-            })
-            ->get();
-
-        return response()->json($users);
-    }
-
-    public function getManagedUsers()
-    {
         $currentManagerId = auth()->id();
-        $employees = DB::table('user_manager')->where('manager_id', $currentManagerId)->get()->toArray();
-
+        $employees = User::where('employer', $currentManagerId)->with('shops')->get()->toArray();
         $res = [];
         foreach ($employees as $employee) {
             $response = [];
-            $userId = $employee->user_id;
 
-            $response['id'] = $userId;
-            $response['is_active'] = $employee->is_active;
-            $user = User::where('id', $userId)->with('shops')->first();
-            $response['name'] = $user->name;
-            $response['email'] = $user->email;
-            $response['email_verified_at'] = $user->email_verified_at;
-            $response['shops'] = $user->shops;
+            $response['id'] = $employee['id'];
+            $response['is_active'] = (bool)$employee['email_verified_at'];
+            $response['name'] = $employee['name'];
+            $response['email'] = $employee['email'];
+            $response['email_verified_at'] = $employee['email_verified_at'];
+            $response['shops'] = $employee['shops'];
             $res[] = $response;
 
         }
@@ -272,95 +220,6 @@ class UserController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Password changed successfully.']);
-    }
-
-    public function getManagers()
-    {
-        $currentUserId = auth()->id(); // Get the logged-in user's ID
-
-        try {
-            // Fetch managers for the current user
-            $managers = DB::table('user_manager')
-                ->join('users', 'user_manager.manager_id', '=', 'users.id') // Join to get manager details
-                ->where('user_manager.user_id', $currentUserId) // Filter by the user ID
-                ->select(
-                    'user_manager.id', // ID from the user_manager table
-                    'user_manager.manager_id',
-                    'user_manager.is_active',
-                    'users.id as user_id',
-                    'users.name as manager_name',
-                    'users.email as manager_email'
-                )
-                ->get();
-
-            // Transform data to match the desired structure
-            $response = $managers->map(function ($manager) {
-                return [
-                    'id' => $manager->id,
-                    'manager_id' => $manager->manager_id,
-                    'is_active' => $manager->is_active,
-                    'manager' => [
-                        'id' => $manager->user_id,
-                        'name' => $manager->manager_name,
-                        'email' => $manager->manager_email,
-                    ],
-                ];
-            });
-
-            return response()->json($response, 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to fetch managers.', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function acceptManager(Request $request)
-    {
-        $validated = $request->validate([
-            'id' => 'required|exists:user_manager,id'
-        ]);
-        $id = $validated['id'];
-        try {
-            // Find the record in the user_manager table
-            $userManager = DB::table('user_manager')->where('id', $id)->first();
-
-            if (!$userManager) {
-                return response()->json(['error' => 'Record not found.'], 404);
-            }
-
-            // Update is_active to 1
-            DB::table('user_manager')
-                ->where('id', $id)
-                ->update(['is_active' => 1]);
-
-            return response()->json(['message' => 'Manager accepted successfully.'], 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to accept manager.', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function rejectManager(Request $request)
-    {
-        $validated = $request->validate([
-            'id' => 'required|exists:user_manager,id'
-        ]);
-        $id = $validated['id'];
-        try {
-            // Find the record in the user_manager table
-            $userManager = DB::table('user_manager')->where('id', $id)->first();
-
-            if (!$userManager) {
-                return response()->json(['error' => 'Record not found.'], 404);
-            }
-
-            // Update is_active to 1
-            DB::table('user_manager')
-                ->where('id', $id)
-                ->update(['is_active' => 0]);
-
-            return response()->json(['message' => 'Manager rejected successfully.'], 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to reject manager.', 'message' => $e->getMessage()], 500);
-        }
     }
 
     public static function CheckIfUserCanManageThisShop($userId, $shopId){

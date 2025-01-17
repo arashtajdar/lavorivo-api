@@ -69,17 +69,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Relationship: Managers of the user
-    public function managers()
-    {
-        return $this->belongsToMany(User::class, 'user_manager', 'user_id', 'manager_id');
-    }
-
-    // Relationship: Users managed by this user
-    public function managedUsers()
-    {
-        return $this->belongsToMany(User::class, 'user_manager', 'manager_id', 'user_id');
-    }
     public function sendEmailVerificationNotification()
     {
         $this->notify(new VerifyEmailNotification);

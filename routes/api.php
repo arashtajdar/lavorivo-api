@@ -74,17 +74,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/shops/{shop}/grantAdmin/{user}', [ShopController::class, 'grantAdminAccess']);
     Route::post('/shops/{shop}/revokeAdmin/{user}', [ShopController::class, 'revokeAdminAccess']);
     Route::get('/shops/{shop}/isUserAdmin/{user}', [ShopController::class, 'userIsShopAdmin']);
-    // Templates
-    Route::apiResource('templates', TemplateController::class);
-
-// Template Days (if needed separately, otherwise handled in TemplateController)
-    Route::apiResource('template-days', TemplateDayController::class);
-
 // Shifts
     Route::apiResource('shifts', ShiftController::class);
-
-// Schedules
-    Route::apiResource('schedules', ScheduleController::class);
 
 // Shops
     Route::apiResource('shops', ShopController::class);
@@ -94,17 +85,13 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 
     Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
-    Route::apiResource('schedules', ScheduleController::class);
     Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
 
     Route::get('/users/employer', [UserController::class, 'usersByEmployer']);
-    Route::get('/users/listUsersToManage', [UserController::class, 'getManagedUsers']);
+    Route::get('/users/listUsersToManage', [UserController::class, 'listUsersToManage']);
 
-    Route::get('/user-managers', [UserController::class, 'getManagers']);
-    Route::post('/accept-manager', [UserController::class, 'acceptManager']);
     Route::post('/reject-manager', [UserController::class, 'rejectManager']);
 
-    Route::get('/user-managers', [UserController::class, 'getManagers']);
     Route::get('/users', [UserController::class, 'index']);
 
     Route::get('/users/{id}', [UserController::class, 'show']);
