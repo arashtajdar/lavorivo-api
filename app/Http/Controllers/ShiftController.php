@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Rule;
@@ -150,10 +151,11 @@ class ShiftController extends Controller
                     $date => $datesWithShifts->get($date, []),
                 ];
             });
-
+            $currentUser = auth()->user();
             return array_merge([
                 'shop_id' => $shopId,
                 'shop_name' => $shopName,
+                'manager' => !!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId),
             ], $datesData->toArray());
         });
 
@@ -425,11 +427,11 @@ class ShiftController extends Controller
         }
         $previousShiftInDb = Shift::query()->where(
             [
-                'shop_id'=> $validatedRequest['shop_id'],
-                'date'   => $validatedRequest['date'],
+                'shop_id' => $validatedRequest['shop_id'],
+                'date' => $validatedRequest['date'],
             ]
         )->first();
-        if($previousShiftInDb){
+        if ($previousShiftInDb) {
             $shiftData = array_merge($previousShiftInDb['shift_data'], $validatedRequest['shift_data']);
             foreach ($shiftData as $key => $shift) {
                 if ($shift['userId'] === 0) {
@@ -489,96 +491,97 @@ class ShiftController extends Controller
         $validatedData = $request->validate([
             'dateFrom' => ['required', 'date', 'before_or_equal:dateTo'], // Mandatory and must be a valid date
             'dateTo' => ['required', 'date', 'after_or_equal:dateFrom'],  // Mandatory and must be a valid date
+            'shopId' => 'required|integer|exists:shops,id',
         ]);
 
         $dateFrom = Carbon::parse($validatedData['dateFrom']);
         $dateTo = Carbon::parse($validatedData['dateTo']);
-
+        $shopId = $validatedData['shopId'];
         $currentUser = auth()->user();
 
         // Get all shop IDs owned by the current user
-        $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
+//        $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
 
         // Get flag to avoid assigning multiple shifts to the same employee per day
         $avoidMultipleShiftsPerDay = $request->get('avoidMultipleShifts', false);
+        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId)) {
+            return response()->json(['error' => 'You cannot manage this shop'], 403);
+        }
+        // Load rules for the shop
+        $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
 
-        foreach ($shopIds as $shopId) {
-            if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId)) {
-                continue;
-            }
-            // Load rules for the shop
-            $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
+        // Fetch all shift labels for the shop
+        $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
 
-            // Fetch all shift labels for the shop
-            $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
+        // Fetch all employees of the shop
+        $shop = Shop::findOrFail($shopId);
+        $employees = $shop->users;
 
-            // Fetch all employees of the shop
-            $shop = Shop::findOrFail($shopId);
-            $employees = $shop->users;
+        if ($employees->isEmpty()) {
+            return response()->json(['message' => 'There are no active employees for this shop!'], 400);
+        }
+        if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
+            return response()->json(['message' => 'here is not any shift labels for this shop!'], 400);
+        }
 
-            if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
-                continue;
-            }
+        $dailyAssignments = []; // Track daily assignments for avoiding multiple shifts per day
 
-            $dailyAssignments = []; // Track daily assignments for avoiding multiple shifts per day
+        // Loop through days
+        $i = 0;
 
-            // Loop through days
-            $i = 0;
+        for ($date = $dateFrom; $date->lte($dateTo); $date->addDay()) {
+            $i++;
+            $dayName = $date->format('l'); // E.g., "Monday"
+            $dateString = $date->toDateString();
+            $shiftData = [];
+            // Shuffle employees to randomize assignment
 
-            for ($date = $dateFrom; $date->lte($dateTo); $date->addDay()) {
-                $i++;
-                $dayName = $date->format('l'); // E.g., "Monday"
-                $dateString = $date->toDateString();
-                $shiftData = [];
-                // Shuffle employees to randomize assignment
+            // Assign shifts for each label
+            foreach ($shiftLabels as $label) {
+                $shuffledEmployees = $employees->shuffle();
 
-                // Assign shifts for each label
-                foreach ($shiftLabels as $label) {
-                    $shuffledEmployees = $employees->shuffle();
-
-                    foreach ($shuffledEmployees as $employee) {
-                        // Check rules for the employee
-                        $employeeRules = $rules->get($employee->id, []);
-                        // Avoid assigning multiple shifts per day if the flag is true
-                        if ($avoidMultipleShiftsPerDay && isset($dailyAssignments[$i][$employee->id])) {
-                            continue;
-                        }
-
-                        if ($this->violatesRules($label, $dayName, $employeeRules)) {
-                            continue; // Skip employee if they violate any rule
-                        }
-
-                        // Assign the shift to the employee
-                        $shiftData[] = [
-                            'label' => [
-                                "id" => $label->id,
-                                "name" => $label->label
-                            ],
-                            'userId' => $employee->id,
-                            'username' => $employee->name,
-                            'duration_minutes' => $label->default_duration_minutes ?? 0,
-                        ];
-                        // Track daily assignments
-                        $dailyAssignments[$i][$employee->id] = true;
-
-                        break; // Move to the next shift label once assigned
+                foreach ($shuffledEmployees as $employee) {
+                    // Check rules for the employee
+                    $employeeRules = $rules->get($employee->id, []);
+                    // Avoid assigning multiple shifts per day if the flag is true
+                    if ($avoidMultipleShiftsPerDay && isset($dailyAssignments[$i][$employee->id])) {
+                        continue;
                     }
-                }
 
-                // Check if a shift already exists for this shop and date
-                $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $dateString)->first();
+                    if ($this->violatesRules($label, $dayName, $employeeRules)) {
+                        continue; // Skip employee if they violate any rule
+                    }
 
-                if ($existingShift) {
-                    $existingShift->shift_data = $shiftData;
-                    $existingShift->save();
-                } else {
-                    // Create a new shift
-                    Shift::create([
-                        'shop_id' => $shopId,
-                        'date' => $dateString,
-                        'shift_data' => $shiftData,
-                    ]);
+                    // Assign the shift to the employee
+                    $shiftData[] = [
+                        'label' => [
+                            "id" => $label->id,
+                            "name" => $label->label
+                        ],
+                        'userId' => $employee->id,
+                        'username' => $employee->name,
+                        'duration_minutes' => $label->default_duration_minutes ?? 0,
+                    ];
+                    // Track daily assignments
+                    $dailyAssignments[$i][$employee->id] = true;
+
+                    break; // Move to the next shift label once assigned
                 }
+            }
+
+            // Check if a shift already exists for this shop and date
+            $existingShift = Shift::query()->where('shop_id', $shopId)->where('date', $dateString)->first();
+
+            if ($existingShift) {
+                $existingShift->shift_data = $shiftData;
+                $existingShift->save();
+            } else {
+                // Create a new shift
+                Shift::create([
+                    'shop_id' => $shopId,
+                    'date' => $dateString,
+                    'shift_data' => $shiftData,
+                ]);
             }
         }
 
