@@ -3,15 +3,12 @@
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RuleController;
-use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
+use App\Http\Controllers\ShiftSwapController;
 use App\Http\Controllers\ShopController;
-use App\Http\Controllers\TemplateController;
-use App\Http\Controllers\TemplateDayController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -67,6 +64,8 @@ Route::get('/email/verify/check', function (Request $request) {
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/user-off-days/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
     Route::post('/user-off-days/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
+
+    Route::post('/shift-swap/request', [ShiftSwapController::class, 'requestSwap']);
 
     Route::get('/user/profile', [UserController::class, 'getProfile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
