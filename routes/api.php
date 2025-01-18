@@ -10,6 +10,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TemplateDayController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserOffDayController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,9 @@ Route::get('/email/verify/check', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('/user-off-days/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
+    Route::post('/user-off-days/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
+
     Route::get('/user/profile', [UserController::class, 'getProfile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::put('/user/change-password', [UserController::class, 'changePassword']);
@@ -121,6 +125,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/rules/deleteByParams', [RuleController::class, 'deleteByParams']);
     Route::get('/shop/{shopId}/rules', [ShopController::class, 'getShopRules']);
     Route::patch('shift-labels/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
+
+    Route::resource('user-off-days', UserOffDayController::class);
 });
 
 
