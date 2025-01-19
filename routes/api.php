@@ -10,6 +10,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () { echo "it is ok";});
@@ -61,6 +62,35 @@ Route::get('/email/verify/check', function (Request $request) {
     ]);
 })->middleware('auth:sanctum');
 
+
+Route::post('/reset-password', function (Request $request) {
+    // Validate the form data
+    $request->validate([
+        'token' => 'required',
+        'email' => 'required|email',
+        'password' => 'required|confirmed|min:8',
+    ]);
+
+    // Attempt to reset the password using the provided token
+    $status = Password::reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+        function ($user, $password) {
+            $user->forceFill([
+                'password' => bcrypt($password),
+            ])->save();
+        }
+    );
+
+    // Check if the password reset was successful
+    if ($status === Password::PASSWORD_RESET) {
+        return response()->json(['message' => 'Password has been reset successfully!']);
+    }
+
+    return response()->json(['error' => __($status)], 400);
+});
+
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/user-off-days/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
     Route::post('/user-off-days/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
@@ -74,7 +104,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/user/profile', [UserController::class, 'getProfile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::put('/user/change-password', [UserController::class, 'changePassword']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 
     Route::patch('/shops/{id}/toggle-state/{state}', [ShopController::class, 'toggleState']);
