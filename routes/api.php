@@ -66,6 +66,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/user-off-days/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
 
     Route::post('/shift-swap/request', [ShiftSwapController::class, 'requestSwap']);
+    Route::get('/shift-swap/requests', [ShiftSwapController::class, 'getRequests']); // Fetch all requests
+    Route::post('/shift-swap/approve/{id}', [ShiftSwapController::class, 'approveRequest']); // Approve a request
+    Route::post('/shift-swap/reject/{id}', [ShiftSwapController::class, 'rejectRequest']); // Reject a request
+    Route::get('/shift-swap/user-requests', [ShiftSwapController::class, 'getUserRequests']); // Fetch user-specific requests
 
     Route::get('/user/profile', [UserController::class, 'getProfile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
