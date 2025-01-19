@@ -67,7 +67,7 @@ class UserController extends Controller
             ]);
             $userId = $validated['user_id'];
 
-            Mail::to("arash.tajdar@gmail.com")->send(new ManagerRemovedUser());
+            Mail::to(User::findOrFail($userId)->email)->send(new ManagerRemovedUser());
             return response()->json(
                 ['message' => 'User removed!'],
                 201);
@@ -90,7 +90,7 @@ class UserController extends Controller
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
                 // email already exist
-                Mail::to("arash.tajdar@gmail.com")->send(new ManagerVerification());
+                Mail::to($validated['email'])->send(new ManagerVerification());
                 return response()->json(
                     ['message' => 'Email already Exist!'],
                     201);
