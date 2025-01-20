@@ -19,6 +19,7 @@ class UserOffDayController extends Controller
     {
         $currentUserId = auth()->id();
         $userIds = User::where('employer', $currentUserId)->pluck('id')->toArray();
+        $userIds[] = $currentUserId;
         $offDays = UserOffDay::whereIn('user_id', $userIds)->with('user')->get();  // Including the user relationship
         return response()->json($offDays);
 

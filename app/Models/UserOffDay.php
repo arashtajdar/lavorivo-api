@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserOffDay extends Model
 {
-    const USER_OFF_DAY_STATUS = [
-        "PENDING",
-        "APPROVED",
-        "REJECTED"
-    ];
+    const USER_OFF_DAY_STATUS_PENDING = 0;
+    const USER_OFF_DAY_STATUS_APPROVED = 1;
+    const USER_OFF_DAY_STATUS_REJECTED = 2;
+
     use HasFactory;
 
     protected $fillable = ['user_id', 'off_date', 'reason', 'status'];

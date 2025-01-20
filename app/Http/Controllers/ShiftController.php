@@ -7,6 +7,7 @@ use App\Models\Shift;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\UserOffDay;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -248,14 +249,11 @@ class ShiftController extends Controller
         $shopId = $validatedData['shopId'];
         $currentUser = auth()->user();
 
-        // Get all shop IDs owned by the current user
-//        $shopIds = Shop::where('owner', $currentUser->id)->pluck('id')->toArray();
-
-        // Get flag to avoid assigning multiple shifts to the same employee per day
-        $avoidMultipleShiftsPerDay = $request->get('avoidMultipleShifts', false);
+        // Ensure user can manage this shop
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId)) {
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
+
         // Load rules for the shop
         $rules = Rule::where('shop_id', $shopId)->get()->groupBy('employee_id');
 
@@ -269,34 +267,40 @@ class ShiftController extends Controller
         if ($employees->isEmpty()) {
             return response()->json(['message' => 'There are no active employees for this shop!'], 400);
         }
-        if ($employees->isEmpty() || $shiftLabels->isEmpty()) {
-            return response()->json(['message' => 'here is not any shift labels for this shop!'], 400);
+
+        if ($shiftLabels->isEmpty()) {
+            return response()->json(['message' => 'There are no shift labels for this shop!'], 400);
         }
+
+        // Fetch all off-day records for employees within the date range
+        $offDays = UserOffDay::whereIn('user_id', $employees->pluck('id'))
+            ->whereBetween('off_date', [$dateFrom, $dateTo])
+            ->where('status', UserOffDay::USER_OFF_DAY_STATUS_APPROVED)
+            ->get()
+            ->groupBy('user_id'); // Group off-days by employee ID
 
         $dailyAssignments = []; // Track daily assignments for avoiding multiple shifts per day
 
         // Loop through days
         $i = 0;
-
         for ($date = $dateFrom; $date->lte($dateTo); $date->addDay()) {
             $i++;
             $dayName = $date->format('l'); // E.g., "Monday"
             $dateString = $date->toDateString();
             $shiftData = [];
-            // Shuffle employees to randomize assignment
 
             // Assign shifts for each label
             foreach ($shiftLabels as $label) {
                 $shuffledEmployees = $employees->shuffle();
 
                 foreach ($shuffledEmployees as $employee) {
-                    // Check rules for the employee
-                    $employeeRules = $rules->get($employee->id, []);
-                    // Avoid assigning multiple shifts per day if the flag is true
-                    if ($avoidMultipleShiftsPerDay && isset($dailyAssignments[$i][$employee->id])) {
-                        continue;
+                    // Check if the employee has an off-day on this date
+                    if (isset($offDays[$employee->id]) && $offDays[$employee->id]->contains('off_date', $dateString)) {
+                        continue; // Skip employee if they have an off-day
                     }
 
+                    // Check rules for the employee
+                    $employeeRules = $rules->get($employee->id, []);
                     if ($this->violatesRules($label, $dayName, $employeeRules)) {
                         continue; // Skip employee if they violate any rule
                     }
@@ -305,12 +309,13 @@ class ShiftController extends Controller
                     $shiftData[] = [
                         'label' => [
                             "id" => $label->id,
-                            "name" => $label->label
+                            "name" => $label->label,
                         ],
                         'userId' => $employee->id,
                         'username' => $employee->name,
                         'duration_minutes' => $label->default_duration_minutes ?? 0,
                     ];
+
                     // Track daily assignments
                     $dailyAssignments[$i][$employee->id] = true;
 
