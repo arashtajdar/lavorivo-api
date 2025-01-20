@@ -298,7 +298,9 @@ class ShiftController extends Controller
                     if (isset($offDays[$employee->id]) && $offDays[$employee->id]->contains('off_date', $dateString)) {
                         continue; // Skip employee if they have an off-day
                     }
-
+                    if (isset($dailyAssignments[$dateString][$employee->id])) {
+                        continue; // Skip if the employee already has a shift on this date
+                    }
                     // Check rules for the employee
                     $employeeRules = $rules->get($employee->id, []);
                     if ($this->violatesRules($label, $dayName, $employeeRules)) {
@@ -317,7 +319,7 @@ class ShiftController extends Controller
                     ];
 
                     // Track daily assignments
-                    $dailyAssignments[$i][$employee->id] = true;
+                    $dailyAssignments[$dateString][$employee->id] = true;
 
                     break; // Move to the next shift label once assigned
                 }
