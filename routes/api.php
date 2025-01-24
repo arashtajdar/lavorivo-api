@@ -86,7 +86,7 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
         </html>
     ', 200, ['Content-Type' => 'text/html']);
 //    return redirect(config('app.frontend_login_url'));
-})->name('verification.verify');
+})->middleware(['signed'])->name('verification.verify');
 
 Route::post('/email/resend', function (Request $request) {
     $user = auth()->user();
