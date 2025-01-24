@@ -12,6 +12,7 @@ use App\Http\Controllers\UserOffDayController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 
 Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
@@ -19,11 +20,6 @@ Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
 Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
-
-
-
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::find($id);
@@ -43,12 +39,11 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     return redirect(config('app.frontend_login_url'));
 })->name('verification.verify');
 
-Route::post('/email/verification-notification', function (Request $request) {
+Route::post('/email/resend', function (Request $request) {
     $user = auth()->user();
     if ($user->hasVerifiedEmail()) {
         return response()->json(['message' => 'Email already verified']);
     }
-
     $user->sendEmailVerificationNotification();
 
     return response()->json(['message' => 'Verification link sent']);
@@ -90,6 +85,13 @@ Route::post('/reset-password', function (Request $request) {
 });
 
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+
+//Route::post('/email/resend', function (Request $request) {
+//    $request->user()->sendEmailVerificationNotification();
+//
+//    return response()->json(['message' => 'Verification link sent.']);
+//})->middleware(['auth:sanctum'])->name('verification.resend');
+
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/user-off-days/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
