@@ -24,11 +24,35 @@ Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::find($id);
     if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
+        return response('
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset Password</title>
+        </head>
+        <body>
+            <h1>User not found</h1>
+        </body>
+        </html>
+    ', 200, ['Content-Type' => 'text/html']);
     }
 
     if (!hash_equals($hash, sha1($user->email))) {
-        return response()->json(['message' => 'Invalid verification link'], 400);
+        return response('
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset Password</title>
+        </head>
+        <body>
+            <h1>Wrong data</h1>
+        </body>
+        </html>
+    ', 200, ['Content-Type' => 'text/html']);
     }
 
     if ($user->hasVerifiedEmail()) {
