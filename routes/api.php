@@ -32,7 +32,19 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
     if ($user->hasVerifiedEmail()) {
-        return redirect(config('app.frontend_login_url'));
+        return response('
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reset Password</title>
+        </head>
+        <body>
+            <h1>already verified!</h1>
+        </body>
+        </html>
+    ', 200, ['Content-Type' => 'text/html']);
     }
 
     $user->markEmailAsVerified();
