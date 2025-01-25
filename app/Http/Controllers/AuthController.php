@@ -51,6 +51,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'role' => User::USER_ROLE_MANAGER,
             'password' => Hash::make($request->password), // Hash the password
         ]);
         $user->sendEmailVerificationNotification();
