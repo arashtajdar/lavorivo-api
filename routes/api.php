@@ -24,69 +24,20 @@ Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     $user = User::find($id);
     if (!$user) {
-        return response('
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset Password</title>
-        </head>
-        <body>
-            <h1>User not found</h1>
-        </body>
-        </html>
-    ', 200, ['Content-Type' => 'text/html']);
+        return response()->json(['message' => 'User not found'], 404);
     }
 
     if (!hash_equals($hash, sha1($user->email))) {
-        return response('
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset Password</title>
-        </head>
-        <body>
-            <h1>Wrong data</h1>
-        </body>
-        </html>
-    ', 200, ['Content-Type' => 'text/html']);
+        return response()->json(['message' => 'Invalid verification link'], 400);
     }
 
     if ($user->hasVerifiedEmail()) {
-        return response('
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset Password</title>
-        </head>
-        <body>
-            <h1>already verified!</h1>
-        </body>
-        </html>
-    ', 200, ['Content-Type' => 'text/html']);
+        return redirect(config('app.frontend_login_url'));
     }
 
     $user->markEmailAsVerified();
-    return response('
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset Password</title>
-        </head>
-        <body>
-            <h1>Email verified!</h1>
-        </body>
-        </html>
-    ', 200, ['Content-Type' => 'text/html']);
 //    return redirect(config('app.frontend_login_url'));
-})->middleware(['signed'])->name('verification.verify');
+})->name('verification.verify');
 
 Route::post('/email/resend', function (Request $request) {
     $user = auth()->user();
