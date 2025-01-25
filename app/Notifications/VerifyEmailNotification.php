@@ -11,7 +11,7 @@ class VerifyEmailNotification extends VerifyEmail
 {
     protected function verificationUrl($notifiable)
     {
-        $prefix = rtrim(config('app.frontend_url'), '/');
+        $prefix = rtrim(config('app.url'), '/');
 
         $temporarySignedURL = URL::temporarySignedRoute(
             'verification.verify',
