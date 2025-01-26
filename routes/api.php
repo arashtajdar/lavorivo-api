@@ -36,7 +36,7 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
     $user->markEmailAsVerified();
-//    return redirect(config('app.frontend_login_url'));
+    return redirect(config('app.frontend_login_url'));
 })->name('verification.verify');
 
 Route::post('/email/resend', function (Request $request) {
