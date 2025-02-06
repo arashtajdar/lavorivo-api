@@ -66,8 +66,9 @@ class UserController extends Controller
                 'user_id' => 'required'
             ]);
             $userId = $validated['user_id'];
-
-            Mail::to(User::findOrFail($userId)->email)->send(new ManagerRemovedUser());
+            $user = User::findOrFail($userId);
+            $user->delete();
+            Mail::to($user->email)->send(new ManagerRemovedUser());
             return response()->json(
                 ['message' => 'User removed!'],
                 201);
