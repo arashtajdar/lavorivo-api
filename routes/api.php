@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
@@ -94,6 +95,9 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']); // Get notifications
+    Route::post('/notifications/read/{id}', [NotificationController::class, 'markAsRead']); // Mark as read
+
     Route::get('/user-off-days/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
     Route::post('/user-off-days/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
 

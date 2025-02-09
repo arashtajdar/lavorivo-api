@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -12,7 +14,6 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -52,6 +53,10 @@ class AuthController extends Controller
 
         // Generate token
         $token = $user->createToken('Personal Access Token')->plainTextToken;
+
+        $message = "Welcome! To begin using the system, create a new shop, create some users and then add shops to the users so you can start managing the shifts.";
+        NotificationService::create($user->getId(), Notification::NOTIFICATION_TYPE_SYSTEM, $message, []);
+
         // Return response
         return response()->json([
             'user' => $user,
