@@ -6,8 +6,10 @@ use App\Mail\ManagerRemovedUser;
 use App\Mail\ManagerVerification;
 use App\Mail\NewEmployeeRegistration;
 use App\Mail\RequestToRegister;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\Shop;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -115,6 +117,8 @@ class UserController extends Controller
 
                 // Send email with password and verification link
                 Mail::to($validated['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
+                $message = "New employee created: ". $user->email;
+                NotificationService::create($user->getId(), Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, $message, []);
 
                 return response()->json(
                     ['message' => 'Account created and email sent with credentials!'],

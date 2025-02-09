@@ -55,7 +55,7 @@ class AuthController extends Controller
         $token = $user->createToken('Personal Access Token')->plainTextToken;
 
         $message = "Welcome! To begin using the system, create a new shop, create some users and then add shops to the users so you can start managing the shifts.";
-        NotificationService::create($user->getId(), Notification::NOTIFICATION_TYPE_SYSTEM, $message, []);
+        NotificationService::create($user->id, Notification::NOTIFICATION_TYPE_SYSTEM, $message, []);
 
         // Return response
         return response()->json([
