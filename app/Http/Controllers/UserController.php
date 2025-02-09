@@ -118,7 +118,7 @@ class UserController extends Controller
                 // Send email with password and verification link
                 Mail::to($validated['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
                 $message = "New employee created: ". $user->email;
-                NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, $message, []);
+                NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, $message, ["id" => $user->id]);
 
                 return response()->json(
                     ['message' => 'Account created and email sent with credentials!'],
