@@ -9,7 +9,7 @@ class SubscriptionController extends Controller
 {
     public function index()
     {
-        $subscriptions = Subscription::where('is_active', 1)->get()->map(function ($subscription) {
+        $subscriptions = Subscription::get()->map(function ($subscription) {
             return [
                 'name' => $subscription->name,
                 'image' => $subscription->image,
@@ -17,6 +17,7 @@ class SubscriptionController extends Controller
                 'discountedPrice' => $subscription->discounted_price,
                 'categoryId' => $subscription->category,
                 'categoryName' => Subscription::SUBSCRIPTION_CATEGORIES[$subscription->category] ?? 'Unknown',
+                'status' => $subscription->is_active,
             ];
         });
 
