@@ -9,8 +9,19 @@ class SubscriptionController extends Controller
 {
     public function index()
     {
-        return response()->json(Subscription::all());
+        $subscriptions = Subscription::where('is_active', 1)->get()->map(function ($subscription) {
+            return [
+                'name' => $subscription->name,
+                'realPrice' => $subscription->price,
+                'discountedPrice' => $subscription->discounted_price,
+                'categoryId' => $subscription->category,
+                'categoryName' => Subscription::SUBSCRIPTION_CATEGORIES[$subscription->category] ?? 'Unknown',
+            ];
+        });
+
+        return response()->json($subscriptions);
     }
+
 
     public function subscribe(Request $request)
     {
