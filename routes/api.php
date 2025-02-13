@@ -8,6 +8,7 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
 use App\Http\Controllers\ShiftSwapController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
 use Illuminate\Http\Request;
@@ -95,6 +96,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+    Route::post('/subscribe', [SubscriptionController::class, 'subscribe'])->middleware('auth:sanctum');
+
+
     Route::get('/notifications', [NotificationController::class, 'index']); // Get notifications
     Route::post('/notifications/read/{id}', [NotificationController::class, 'markAsRead']); // Mark as read
 
