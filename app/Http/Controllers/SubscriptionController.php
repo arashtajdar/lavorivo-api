@@ -11,6 +11,7 @@ class SubscriptionController extends Controller
     {
         $subscriptions = Subscription::get()->map(function ($subscription) {
             return [
+                'id' => $subscription->id,
                 'name' => $subscription->name,
                 'image' => $subscription->image,
                 'realPrice' => $subscription->price,
