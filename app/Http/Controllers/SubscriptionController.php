@@ -12,6 +12,7 @@ class SubscriptionController extends Controller
         $subscriptions = Subscription::where('is_active', 1)->get()->map(function ($subscription) {
             return [
                 'name' => $subscription->name,
+                'image' => $subscription->image,
                 'realPrice' => $subscription->price,
                 'discountedPrice' => $subscription->discounted_price,
                 'categoryId' => $subscription->category,
