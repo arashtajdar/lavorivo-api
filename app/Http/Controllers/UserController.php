@@ -87,7 +87,9 @@ class UserController extends Controller
             'email' => 'required|email'
         ]);
         $currentManagerId = auth()->id();
-
+        if(count(auth()->user()->employees) >= auth()->user()->subscription->maximum_employees){
+            return response()->json(["message" => "Maximum Employees reached. Upgrade to have more employees!"], 400);
+        }
         try {
 
             $user = User::firstWhere('email', $validated['email']);
