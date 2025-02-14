@@ -30,6 +30,12 @@ class ShopController extends Controller
             'location' => 'nullable|string|max:255',
         ]);
         $request['owner'] = auth()->id();
+        if(auth()->user()->employer){
+            return response()->json(["message" => "You cannot create a new shop!"], 403);
+        }
+        if(count(auth()->user()->ownedShops) >= auth()->user()->subscription->maximum_shops){
+            return response()->json(["message" => "Maximum shops reached. Upgrade to have more shops!"], 400);
+        }
         $shop = Shop::create($request->all());
 
         return response()->json($shop, 201);
