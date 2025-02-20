@@ -15,18 +15,23 @@ class StripeController extends Controller
 {
     public function createCheckoutSession(Request $request)
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $request->validate([
+            'subscription_id' => 'required|exists:subscriptions,id'
+        ]);
 
-        $subscription = Subscription::where('id', $request->subscription_id)->firstOrFail();
         $user = auth()->user();
+        $subscription = Subscription::findOrFail($request->subscription_id);
+
+        Stripe::setApiKey(config('services.stripe.secret'));
 
         $session = Session::create([
             'payment_method_types' => ['card'],
+            'customer_email' => $user->email,
             'line_items' => [[
                 'price_data' => [
-                    'currency' => 'usd',
+                    'currency' => 'eur',
                     'product_data' => [
-                        'name' => $subscription->product_id
+                        'name' => $subscription->name,
                     ],
                     'unit_amount' => $subscription->discounted_price * 100, // Convert to cents
                 ],
@@ -37,7 +42,7 @@ class StripeController extends Controller
             'cancel_url' => config('app.frontend_url') . '/subscription/cancel',
             'metadata' => [
                 'user_id' => $user->id,
-                'product_id' => $subscription->product_id
+                'subscription_id' => $subscription->id,
             ],
         ]);
 
@@ -45,31 +50,32 @@ class StripeController extends Controller
     }
 
 
-    public function handleWebhook(Request $request)
-    {
-        try {
-            $payload = $request->getContent();
-            $sigHeader = $request->header('Stripe-Signature');
-            $endpointSecret = config('services.stripe.webhook_secret');
+public function handleWebhook(Request $request)
+{
+    try {
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $endpointSecret = config('services.stripe.webhook_secret');
 
-            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+        $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
 
-            if ($event->type === 'checkout.session.completed') {
-                $session = $event->data['object'];
-                $user = User::find($session['metadata']['user_id']);
-                $subscription = Subscription::where('product_id', $session['metadata']['product_id'])->first();
+        if ($event->type === 'checkout.session.completed') {
+            $session = $event->data['object'];
 
-                if ($user && $subscription) {
-                    $user->subscription_id = $subscription->id;
-                    $user->subscription_expiry = now()->addMonth(); // Adjust based on plan duration
-                    $user->save();
-                }
+            $user = User::find($session['metadata']['user_id']);
+            $subscriptionId = $session['metadata']['subscription_id'];
+
+            if ($user) {
+                $user->subscription_id = $subscriptionId;
+                $user->subscription_expiry_date = now()->addMonth(); // Adjust based on plan
+                $user->save();
             }
-        } catch (\Exception $e) {
-            Log::error('Stripe Webhook Error: ' . $e->getMessage());
         }
-
-        return response()->json(['status' => 'success']);
+    } catch (\Exception $e) {
+        Log::error('Stripe Webhook Error: ' . $e->getMessage());
     }
+
+    return response()->json(['status' => 'success']);
+}
 
 }
