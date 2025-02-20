@@ -17,7 +17,7 @@ class StripeController extends Controller
     {
         Stripe::setApiKey(config('services.stripe.secret'));
 
-        $subscription = Subscription::where('product_id', $request->product_id)->firstOrFail();
+        $subscription = Subscription::where('id', $request->subscription_id)->firstOrFail();
         $user = auth()->user();
 
         $session = Session::create([
@@ -26,7 +26,7 @@ class StripeController extends Controller
                 'price_data' => [
                     'currency' => 'usd',
                     'product_data' => [
-                        'name' => $subscription->name
+                        'name' => $subscription->product_id
                     ],
                     'unit_amount' => $subscription->discounted_price * 100, // Convert to cents
                 ],
