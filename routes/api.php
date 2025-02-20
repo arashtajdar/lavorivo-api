@@ -8,6 +8,7 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\ShiftLabelController;
 use App\Http\Controllers\ShiftSwapController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
@@ -94,8 +95,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 //    return response()->json(['message' => 'Verification link sent.']);
 //})->middleware(['auth:sanctum'])->name('verification.resend');
 
-
+Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+
+    Route::post('/stripe/checkout', [StripeController::class, 'createCheckoutSession']);
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
     Route::post('/subscribe', [SubscriptionController::class, 'subscribe'])->middleware('auth:sanctum');
 

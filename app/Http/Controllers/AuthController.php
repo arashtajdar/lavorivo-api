@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Models\Subscription;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'role' => User::USER_ROLE_MANAGER,
+            'subscription_id' => Subscription::DEFAULT_SUBSCRIPTION_ID,
             'password' => Hash::make($request->password), // Hash the password
         ]);
         $user->sendEmailVerificationNotification();

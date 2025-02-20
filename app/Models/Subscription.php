@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Subscription extends Model
 {
+    const DEFAULT_SUBSCRIPTION_ID = 1;
+
     const SUBSCRIPTION_CATEGORIES = [
         1 => 'MONTHLY',
         2 => 'ANNUALLY',
