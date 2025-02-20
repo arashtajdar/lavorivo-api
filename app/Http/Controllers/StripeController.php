@@ -77,30 +77,4 @@ class StripeController extends Controller
 
         return response()->json(['status' => 'success']);
     }
-
-    public function getSubscriptionDetails(Request $request)
-    {
-        $request->validate([
-            'session_id' => 'required|string'
-        ]);
-
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        try {
-            $session = StripeSession::retrieve($request->session_id);
-
-            $user = User::find($session->metadata->user_id);
-            if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
-            }
-
-            return response()->json([
-                'subscription_id' => $user->subscription_id,
-                'subscription_expiry' => $user->subscription_expiry
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
 }
