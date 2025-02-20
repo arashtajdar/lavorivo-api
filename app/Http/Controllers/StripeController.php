@@ -46,7 +46,7 @@ class StripeController extends Controller
             ],
         ]);
 
-        return response()->json(['id' => $session->id]);
+        return response()->json($session);
     }
 
 
