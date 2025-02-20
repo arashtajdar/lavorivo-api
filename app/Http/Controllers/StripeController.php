@@ -50,32 +50,57 @@ class StripeController extends Controller
     }
 
 
-public function handleWebhook(Request $request)
-{
-    try {
-        $payload = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = config('services.stripe.webhook_secret');
+    public function handleWebhook(Request $request)
+    {
+        try {
+            $payload = $request->getContent();
+            $sigHeader = $request->header('Stripe-Signature');
+            $endpointSecret = config('services.stripe.webhook_secret');
 
-        $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
 
-        if ($event->type === 'checkout.session.completed') {
-            $session = $event->data['object'];
+            if ($event->type === 'checkout.session.completed') {
+                $session = $event->data['object'];
 
-            $user = User::find($session['metadata']['user_id']);
-            $subscriptionId = $session['metadata']['subscription_id'];
+                $user = User::find($session['metadata']['user_id']);
+                $subscriptionId = $session['metadata']['subscription_id'];
 
-            if ($user) {
-                $user->subscription_id = $subscriptionId;
-                $user->subscription_expiry_date = now()->addMonth(); // Adjust based on plan
-                $user->save();
+                if ($user) {
+                    $user->subscription_id = $subscriptionId;
+                    $user->subscription_expiry_date = now()->addMonth(); // Adjust based on plan
+                    $user->save();
+                }
             }
+        } catch (\Exception $e) {
+            Log::error('Stripe Webhook Error: ' . $e->getMessage());
         }
-    } catch (\Exception $e) {
-        Log::error('Stripe Webhook Error: ' . $e->getMessage());
+
+        return response()->json(['status' => 'success']);
     }
 
-    return response()->json(['status' => 'success']);
-}
+    public function getSubscriptionDetails(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string'
+        ]);
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        try {
+            $session = StripeSession::retrieve($request->session_id);
+
+            $user = User::find($session->metadata->user_id);
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            return response()->json([
+                'subscription_id' => $user->subscription_id,
+                'subscription_expiry' => $user->subscription_expiry
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
 }
