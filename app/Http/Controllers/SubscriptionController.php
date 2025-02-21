@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subscription;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class SubscriptionController extends Controller
 {
@@ -40,5 +41,28 @@ class SubscriptionController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Subscription updated successfully.', 'user' => $user]);
+    }
+
+    public function validatePurchase(Request $request)
+    {
+        $transaction = $request->input('transaction');
+
+        // Verify receipt with Apple
+        $appleResponse = Http::post('https://buy.itunes.apple.com/verifyReceipt', [
+            'receipt-data' => $transaction['receipt'],
+            'password' => config('services.apple.shared_secret'), // Set this in .env
+        ]);
+
+        if ($appleResponse->failed()) {
+            return response()->json(['error' => 'Invalid receipt'], 400);
+        }
+
+        // Get user & update subscription
+        $user = auth()->user();
+        $user->subscription_id = $transaction['productId'];
+        $user->subscription_expiry_date = now()->addMonth(); // Adjust based on plan
+        $user->save();
+
+        return response()->json(['message' => 'Subscription updated', 'user' => $user]);
     }
 }
