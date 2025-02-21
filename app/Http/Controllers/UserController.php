@@ -138,10 +138,19 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        // Delete all shops owned by this user (Using `ownedShops` relation)
+        $user->ownedShops()->delete();
+
+        // Delete all employees managed by this user (Using `employees` relation)
+        $user->employees()->delete();
+
+        // Delete the user itself
         $user->delete();
 
-        return response()->json(['message' => 'User deleted successfully']);
+        return response()->json(['message' => 'User and associated data deleted successfully']);
     }
+
 
     // Retrieve users connected to a specific shop
     public function usersByShop($shopId)
