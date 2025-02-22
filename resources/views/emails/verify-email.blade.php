@@ -39,17 +39,17 @@
         </a>
     </div>
 
-    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
-        After verifying, Basic plan will be enabled for you.
-        You are limited to one shop and ten employees in Basic plan.
-        After logging in, you can upgrade your account by clicking on the button below:
-    </p>
-    <div style="text-align: center; margin: 25px 0;">
-        <a href="https://app.lavorivo.com/subscription"
-           style="background-color: #2d3748; border-radius: 4px; color: #fff; display: inline-block; padding: 8px 18px; text-decoration: none;">
-            Subscription page.
-        </a>
-    </div>
+{{--    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">--}}
+{{--        After verifying, Basic plan will be enabled for you.--}}
+{{--        You are limited to one shop and ten employees in Basic plan.--}}
+{{--        After logging in, you can upgrade your account by clicking on the button below:--}}
+{{--    </p>--}}
+{{--    <div style="text-align: center; margin: 25px 0;">--}}
+{{--        <a href="https://app.lavorivo.com/subscription"--}}
+{{--           style="background-color: #2d3748; border-radius: 4px; color: #fff; display: inline-block; padding: 8px 18px; text-decoration: none;">--}}
+{{--            Subscription page.--}}
+{{--        </a>--}}
+{{--    </div>--}}
 
     <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
         This verification link will expire in {{ $count }} minutes.
