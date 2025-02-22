@@ -28,8 +28,8 @@ class EmailVerification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('arash.tajdar@gmail.com', 'Shifty'),
-            subject: 'Verify Your Email Address',
+            from: new Address('no-reply@lavorivo.com', config('app.name')),
+            subject: 'Verify Your Email Address | ' . config('app.name'),
         );
     }
 

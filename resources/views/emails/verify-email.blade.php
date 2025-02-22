@@ -38,6 +38,13 @@
     </div>
 
     <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
+        After verifying, Basic plan will be enabled for you.
+        You are limited to one shop and ten employees in Basic plan.
+        After logging in, you can upgrade your account in
+        <a href="https://app.lavorivo.com/subscription"></a>
+    </p>
+
+    <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
         This verification link will expire in {{ $count }} minutes.
     </p>
 
