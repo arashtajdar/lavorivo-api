@@ -40,8 +40,10 @@
     <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
         After verifying, Basic plan will be enabled for you.
         You are limited to one shop and ten employees in Basic plan.
-        After logging in, you can upgrade your account in
-        <a href="https://app.lavorivo.com/subscription"></a>
+        After logging in, you can upgrade your account by clicking on the button below:
+        <a href="https://app.lavorivo.com/subscription" style="background-color: #2d3748; border-radius: 4px; color: #fff; display: inline-block; padding: 8px 18px; text-decoration: none;">
+            Subscription page.
+        </a>
     </p>
 
     <p style="font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: left;">
