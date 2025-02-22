@@ -28,7 +28,7 @@ class ManagerVerification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('arash.tajdar@gmail.com', 'Shifty'),
+            from: new Address('no-reply@lavorivo.com', config('app.name')),
             subject: 'Verify manager',
         );
     }
