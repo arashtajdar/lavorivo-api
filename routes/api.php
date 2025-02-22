@@ -39,7 +39,9 @@ Route::get('/email/verify/{id}/{hash}', function ($id, $hash) {
     }
 
     $user->markEmailAsVerified();
-    return redirect(config('app.frontend_email_verified_url'));
+    $redirectUrl = config('app.frontend_email_verified_url', 'https://app.lavorivo.com/auth/email-verified');
+
+    return redirect()->to($redirectUrl);
 
 })->name('verification.verify');
 
