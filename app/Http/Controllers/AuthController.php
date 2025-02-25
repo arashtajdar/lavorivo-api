@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\Notification;
 use App\Models\Subscription;
+use App\Services\HistoryService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +30,7 @@ class AuthController extends Controller
         // Generate token
         $user = Auth::user();
         $token = $user->createToken('Personal Access Token')->plainTextToken;
-
+        HistoryService::log(History::USER_LOGIN, []);
         return response()->json([
             'user' => $user,
             'token' => $token,
