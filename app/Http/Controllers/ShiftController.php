@@ -114,7 +114,7 @@ class ShiftController extends Controller
 
         // Validate dateFrom and dateTo, or set defaults
         $dateFrom = $request->has('dateFrom') ? Carbon::parse($request->dateFrom) : Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $dateTo = $request->has('dateTo') ? Carbon::parse($request->dateTo) : $dateFrom->copy()->addDays(34);
+        $dateTo = $request->has('dateTo') ? Carbon::parse($request->dateTo) : $dateFrom->copy()->addDays(6);
 
         // Ensure dateTo is not earlier than dateFrom
         if ($dateTo->lt($dateFrom)) {
