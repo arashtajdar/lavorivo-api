@@ -6,9 +6,11 @@ use App\Mail\ManagerRemovedUser;
 use App\Mail\ManagerVerification;
 use App\Mail\NewEmployeeRegistration;
 use App\Mail\RequestToRegister;
+use App\Models\History;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\Shop;
+use App\Services\HistoryService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Exception;
@@ -71,6 +73,10 @@ class UserController extends Controller
             $user = User::findOrFail($userId);
             $user->delete();
             Mail::to($user->email)->send(new ManagerRemovedUser());
+            HistoryService::log(History::REMOVE_EMPLOYEE, [
+                "employee_id" => $userId,
+                "manager_id" => $currentManagerId,
+            ]);
             return response()->json(
                 ['message' => 'User removed!'],
                 201);
@@ -121,6 +127,10 @@ class UserController extends Controller
                 Mail::to($validated['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
                 $message = "New employee created: ". $user->email;
                 NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, $message, ["id" => $user->id]);
+                HistoryService::log(History::ADD_EMPLOYEE, [
+                    "employee_id" => $user->id,
+                    "manager_id" => $currentManagerId,
+                ]);
 
                 return response()->json(
                     ['message' => 'Account created and email sent with credentials!'],
@@ -147,6 +157,9 @@ class UserController extends Controller
 
         // Delete the user itself
         $user->delete();
+        HistoryService::log(History::USER_DELETED_ACCOUNT, [
+            "user_id" => $id,
+        ]);
 
         return response()->json(['message' => 'User and associated data deleted successfully']);
     }
@@ -215,7 +228,7 @@ class UserController extends Controller
         $user = auth()->user();
         $user->name = $validated['name'];
         $user->save();
-
+        HistoryService::log(History::USER_UPDATED_PROFILE, $validated);
         return response()->json(['message' => 'Profile updated successfully.']);
     }
 
@@ -234,6 +247,7 @@ class UserController extends Controller
 
         $user->password = Hash::make($validated['new_password']);
         $user->save();
+        HistoryService::log(History::USER_CHANGED_PASSWORD, $validated);
 
         return response()->json(['message' => 'Password changed successfully.']);
     }

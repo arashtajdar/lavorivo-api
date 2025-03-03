@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 
 class ShiftLabelController extends Controller
@@ -67,7 +69,7 @@ class ShiftLabelController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'label' => 'required|string|max:255',
             'default_duration_minutes' => 'nullable|integer|min:1',
@@ -87,6 +89,7 @@ class ShiftLabelController extends Controller
             'default_duration_minutes' => $request->default_duration_minutes,
             'applicable_days' => $validated['applicable_days'],
         ]);
+        HistoryService::log(History::ADD_LABEL, $validated);
 
         return response()->json($shiftLabel, 201);
     }
@@ -128,6 +131,7 @@ class ShiftLabelController extends Controller
         ]);
 
         $shiftLabel->update($validated);
+        HistoryService::log(History::UPDATE_LABEL, $validated);
 
         return response()->json($shiftLabel);
     }
@@ -141,6 +145,7 @@ class ShiftLabelController extends Controller
         $shiftLabel = ShiftLabel::findOrFail($id);
 
         $shiftLabel->delete();
+        HistoryService::log(History::REMOVE_LABEL, $id);
 
         return response()->json(['message' => 'Shift label deleted successfully']);
     }

@@ -82,6 +82,7 @@ class AuthController extends Controller
         if ($status === Password::RESET_LINK_SENT) {
             return response()->json(['message' => __($status)]);
         }
+        HistoryService::log(History::USER_FORGET_PASSWORD_REQUEST, []);
 
         return response()->json(['error' => __($status)], 400);
     }

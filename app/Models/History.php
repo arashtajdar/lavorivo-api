@@ -41,4 +41,13 @@ class History extends Model
     const USER_CHANGED_PASSWORD = 18;
     const USER_DELETED_ACCOUNT = 19;
     const USER_LOGIN = 20;
+    const USER_FORGET_PASSWORD_REQUEST = 21;
+    const RULE_ADDED = 22;
+    const RULE_REMOVED = 23;
+    const ADD_LABEL = 24;
+    const UPDATE_LABEL = 25;
+    const REMOVE_LABEL = 26;
+    const ADD_USER_TO_SHOP = 27;
+    const REMOVE_USER_FROM_SHOP = 28;
+    const PURCHASE_SUCCESS = 29;
 }

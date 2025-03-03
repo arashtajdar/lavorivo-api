@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\Rule;
 use App\Models\Shift;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserOffDay;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +70,7 @@ class ShiftController extends Controller
             // Update the shift_data column
             $shift->shift_data = $validatedData['shiftData'];
             $shift->save();
+            HistoryService::log(History::REMOVE_SHIFT, $validatedData);
 
             return response()->json(['message' => 'Shift updated successfully.'], 200);
         } catch (\Exception $e) {
@@ -192,6 +195,7 @@ class ShiftController extends Controller
             $previousShiftInDb->save();
             return response()->json($previousShiftInDb, 201);
         }
+        HistoryService::log(History::ADD_SHIFT, $validatedRequest);
 
         $shift = Shift::create($request->all());
 
@@ -220,6 +224,7 @@ class ShiftController extends Controller
         }
         $previousShiftInDb->shift_data = $validatedRequest['shift_data'];
         $previousShiftInDb->save();
+        HistoryService::log(History::UPDATE_SHIFT, $validatedRequest);
 
 
 //        $shift->update($request->all());

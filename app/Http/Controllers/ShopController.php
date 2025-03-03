@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\Rule;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function Symfony\Component\Translation\t;
@@ -25,7 +27,7 @@ class ShopController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
         ]);
@@ -37,6 +39,7 @@ class ShopController extends Controller
             return response()->json(["message" => "Maximum shops reached. Upgrade to have more shops!"], 400);
         }
         $shop = Shop::create($request->all());
+        HistoryService::log(History::ADD_SHOP, $validated);
 
         return response()->json($shop, 201);
     }
@@ -56,12 +59,13 @@ class ShopController extends Controller
     {
         $shop = Shop::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'location' => 'sometimes|string|max:255',
         ]);
 
         $shop->update($request->all());
+        HistoryService::log(History::UPDATE_SHOP, $validated);
 
         return response()->json($shop);
     }
@@ -73,6 +77,7 @@ class ShopController extends Controller
     {
         $shop = Shop::findOrFail($id);
         $shop->delete();
+        HistoryService::log(History::REMOVE_SHOP, $id);
 
         return response()->json(['message' => 'Shop deleted'], 200);
     }
@@ -91,6 +96,10 @@ class ShopController extends Controller
             $shop->users()->attach($user->id);
             return response()->json(['message' => 'User added to shop successfully.'], 200);
         }
+        HistoryService::log(History::ADD_USER_TO_SHOP, [
+            'shop_id' => $shopId,
+            'user_id' => $user->id,
+        ]);
 
         return response()->json(['message' => 'User is already assigned to this shop.'], 409);
     }
@@ -105,7 +114,10 @@ class ShopController extends Controller
             $shop->users()->detach($user->id);
             return response()->json(['message' => 'User removed from shop successfully.'], 200);
         }
-
+        HistoryService::log(History::REMOVE_USER_FROM_SHOP, [
+            'shop_id' => $shopId,
+            'user_id' => $userId,
+        ]);
         return response()->json(['message' => 'User is not assigned to this shop.'], 404);
     }
 

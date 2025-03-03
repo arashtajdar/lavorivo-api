@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\Shift;
 use App\Models\User;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use App\Models\ShiftSwapRequest;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +107,7 @@ class ShiftSwapController extends Controller
             $swapRequest->save();
 
             DB::commit(); // Commit the transaction
+            HistoryService::log(History::ACCEPT_SHIFT_SWAP, $id);
 
             return response()->json(['message' => 'Shift swap request approved and shifts updated successfully.'], 200);
         } catch (\Exception $e) {
@@ -126,6 +129,7 @@ class ShiftSwapController extends Controller
 
         $swapRequest->status = 2; // Rejected
         $swapRequest->save();
+        HistoryService::log(History::REJECT_SHIFT_SWAP, $id);
 
         return response()->json(['message' => 'Shift swap request rejected successfully.'], 200);
     }

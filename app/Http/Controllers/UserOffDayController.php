@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\User;
 use App\Models\UserOffDay;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 
 class UserOffDayController extends Controller
@@ -33,6 +35,13 @@ class UserOffDayController extends Controller
         ]);
         $userOffDay = UserOffDay::findOrFail($validated['id']);
         $userOffDay->update($validated);
+
+        if($validated['status'] == 1){
+            HistoryService::log(History::APPROVE_OFF_DAY, $validated);
+        }else{
+            HistoryService::log(History::REJECT_OFF_DAY, $validated);
+        }
+
         return response()->json($userOffDay);
 
     }
@@ -47,6 +56,7 @@ class UserOffDayController extends Controller
         ]);
 
         $offDay = UserOffDay::create($validated);
+
         return response()->json($offDay, 201);
     }
 

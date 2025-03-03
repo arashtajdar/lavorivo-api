@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\History;
 use App\Models\Rule;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 
 class RuleController extends Controller
@@ -42,6 +44,7 @@ class RuleController extends Controller
         ]);
 
         $rule = Rule::create($validated);
+        HistoryService::log(History::RULE_ADDED, $validated);
 
         return response()->json($rule, 201);
     }
@@ -65,6 +68,7 @@ class RuleController extends Controller
         }
 
         $rule->delete(); // Delete the rule
+        HistoryService::log(History::RULE_REMOVED, $validated);
 
         return response()->json(['message' => 'Rule deleted successfully'], 200);
     }
@@ -100,6 +104,7 @@ class RuleController extends Controller
         ]);
 
         $rule->update($validated);
+        HistoryService::log(History::RULE_UPDATED, $validated);
 
         return response()->json($rule);
     }
