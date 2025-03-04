@@ -29,7 +29,7 @@ class LogHistoryJob implements ShouldQueue
         History::create([
             'user_id' => $this->userId,
             'action_type' => $this->actionType,
-            'details' => json_encode($this->details),
+            'details' => $this->details,
         ]);
     }
 }
