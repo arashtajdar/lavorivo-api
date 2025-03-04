@@ -26,6 +26,7 @@ return [
     */
 
     'route_domain' => null,
+    'asset_url' => env('APP_URL', 'https://api.lavorivo.com'),
 
     /*
     |--------------------------------------------------------------------------
