@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Opcodes\LogViewer\Facades\LogViewer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        LogViewer::auth(function ($request) {
+            $authorizedEmails = [];
+            array_push($authorizedEmails, 'arash.tajdar@gmail.com');
+            return $request->user() && in_array($request->user()->email, $authorizedEmails);
+        });
     }
 }
