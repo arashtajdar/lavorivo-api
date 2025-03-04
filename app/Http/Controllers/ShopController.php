@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\History;
+use App\Models\Notification;
 use App\Models\Rule;
 use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Models\User;
 use App\Services\HistoryService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use function Symfony\Component\Translation\t;
 
 class ShopController extends Controller
 {
@@ -40,6 +41,9 @@ class ShopController extends Controller
         }
         $shop = Shop::create($request->all());
         HistoryService::log(History::ADD_SHOP, $validated);
+
+        $message = "New shop created: ". $shop->name;
+        NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_SHOP_CREATED, $message, ["shopId" => $shop->id]);
 
         return response()->json($shop, 201);
     }

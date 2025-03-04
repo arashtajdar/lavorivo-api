@@ -50,4 +50,5 @@ class History extends Model
     const ADD_USER_TO_SHOP = 27;
     const REMOVE_USER_FROM_SHOP = 28;
     const PURCHASE_SUCCESS = 29;
+    const UPDATE_RULE = 22;
 }

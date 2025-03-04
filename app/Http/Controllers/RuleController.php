@@ -104,7 +104,7 @@ class RuleController extends Controller
         ]);
 
         $rule->update($validated);
-        HistoryService::log(History::RULE_UPDATED, $validated);
+        HistoryService::log(History::UPDATE_RULE, $validated);
 
         return response()->json($rule);
     }

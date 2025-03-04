@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\History;
+use App\Models\Notification;
 use App\Models\Subscription;
 use App\Services\HistoryService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -71,6 +73,9 @@ class SubscriptionController extends Controller
             "subscription_expiry_date" => $user->subscription_expiry_date,
             "userId" => $user->id
         ]);
+        $message = "New subscription activated: ";
+        NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_SUBSCRIPTION_ACTIVATED, $message, ["id" => $user->subscription_id]);
+
         return response()->json(['message' => 'Subscription updated', 'user' => $user]);
     }
 }
