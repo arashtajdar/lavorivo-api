@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         LogViewer::auth(function ($request) {
             $authorizedEmails = [];
             array_push($authorizedEmails, 'arash.tajdar@gmail.com');
-            return $request->user() && in_array($request->user()->email, $authorizedEmails);
+            return $request->user('sanctum') && in_array($request->user('sanctum')->email, $authorizedEmails);
         });
     }
 }
