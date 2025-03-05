@@ -13,6 +13,7 @@ use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ShiftController extends Controller
 {
@@ -54,6 +55,7 @@ class ShiftController extends Controller
         ]);
         $currentUser = auth()->user();
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $validatedData['shopId'])) {
+            Log::error('You cannot manage this shop', $validatedData);
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
         try {
@@ -64,6 +66,7 @@ class ShiftController extends Controller
 
             // If no shift is found, return an error response
             if (!$shift) {
+                Log::error('Shift not found.', $validatedData);
                 return response()->json(['error' => 'Shift not found.'], 404);
             }
 
@@ -74,7 +77,8 @@ class ShiftController extends Controller
 
             return response()->json(['message' => 'Shift updated successfully.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred while updating the shift.', 'details' => $e->getMessage()], 500);
+            Log::error('An error occurred while removing the shift.', $validatedData);
+            return response()->json(['error' => 'An error occurred while removing the shift.', 'details' => $e->getMessage()], 500);
         }
     }
 
@@ -176,6 +180,7 @@ class ShiftController extends Controller
         ]);
         $currentUser = auth()->user();
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $validatedRequest['shop_id'])) {
+            Log::error('You cannot manage this shop', $validatedRequest);
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
         $previousShiftInDb = Shift::query()->where(
@@ -256,6 +261,8 @@ class ShiftController extends Controller
 
         // Ensure user can manage this shop
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId)) {
+            Log::error('AUTO: You cannot manage this shop', $validatedData);
+
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
 
@@ -270,10 +277,13 @@ class ShiftController extends Controller
         $employees = $shop->users;
 
         if ($employees->isEmpty()) {
+            Log::error('There are no active employees for this shop!', $validatedData);
+
             return response()->json(['message' => 'There are no active employees for this shop!'], 400);
         }
 
         if ($shiftLabels->isEmpty()) {
+            Log::error('There are no shift labels for this shop!', $validatedData);
             return response()->json(['message' => 'There are no shift labels for this shop!'], 400);
         }
 

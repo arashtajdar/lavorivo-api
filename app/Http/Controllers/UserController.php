@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
@@ -81,7 +82,13 @@ class UserController extends Controller
                 ['message' => 'User removed!'],
                 201);
         } catch (Exception $e) {
-            //var_dump($e->getMessage());
+            Log::error("Error removing employee", [
+                'message' => $e->getMessage(),
+                'data' => $validated
+            ]);
+            return response()->json(
+                ['message' =>  $e->getMessage()],
+                402);
         }
 
     }
@@ -137,6 +144,10 @@ class UserController extends Controller
                     201);
             }
         } catch (ValidationException $e) {
+            Log::error('Failed to add the user', [
+                'message' => $e->getMessage(),
+                'data' => $validated
+            ]);
             return response()->json([
                 'message' => 'Failed to add the user',
                 'errors' => $e->errors(),
@@ -177,6 +188,10 @@ class UserController extends Controller
             ->pluck('user_id')->toArray();
         if ($shop->owner != $currentUser->id) { // if current user is not shop owner
             if (!!count($isShopManager)) {
+                Log::error("Unauthorized access trial to usersByShop", [
+                    'shopId' => $shopId,
+                    'userId' => auth()->id()
+                ]);
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
         }

@@ -12,6 +12,7 @@ use App\Services\HistoryService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ShopController extends Controller
 {
@@ -34,9 +35,11 @@ class ShopController extends Controller
         ]);
         $request['owner'] = auth()->id();
         if(auth()->user()->employer){
+            Log::error('Cannot create shop because customer has employer', $validated);
             return response()->json(["message" => "You cannot create a new shop!"], 403);
         }
         if(count(auth()->user()->ownedShops) >= auth()->user()->subscription->maximum_shops){
+            Log::error("Maximum shops reached. Upgrade to have more shops!", $validated);
             return response()->json(["message" => "Maximum shops reached. Upgrade to have more shops!"], 400);
         }
         $shop = Shop::create($request->all());

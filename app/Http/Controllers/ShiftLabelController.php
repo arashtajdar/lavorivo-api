@@ -7,6 +7,7 @@ use App\Models\ShiftLabel;
 use App\Models\Shop;
 use App\Services\HistoryService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ShiftLabelController extends Controller
 {
@@ -121,6 +122,7 @@ class ShiftLabelController extends Controller
         // Ensure the user is authorized to update this shift label
         $currentUser = auth()->user();
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shiftLabel->shop_id)) {
+            Log::error('You cannot manage this shop', []);
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
 

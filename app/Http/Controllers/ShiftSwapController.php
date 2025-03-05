@@ -9,6 +9,7 @@ use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use App\Models\ShiftSwapRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ShiftSwapController extends Controller
 {
@@ -112,7 +113,10 @@ class ShiftSwapController extends Controller
             return response()->json(['message' => 'Shift swap request approved and shifts updated successfully.'], 200);
         } catch (\Exception $e) {
             DB::rollBack(); // Rollback the transaction in case of error
-
+            Log::error('Failed to approve shift swap request.', [
+                'message' => $e->getMessage(),
+                'id' => $id
+            ]);
             return response()->json(['error' => 'Failed to approve shift swap request.', 'message' => $e->getMessage()], 500);
         }
     }

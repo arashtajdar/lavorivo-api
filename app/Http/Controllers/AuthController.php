@@ -18,13 +18,14 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
         // Check credentials
         if (!Auth::attempt($request->only('email', 'password'))) {
+            Log::error('Invalid credentials', $validated);
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
@@ -32,7 +33,6 @@ class AuthController extends Controller
         $user = Auth::user();
         $token = $user->createToken('Personal Access Token')->plainTextToken;
         HistoryService::log(History::USER_LOGIN, []);
-        Log::error('Logged in');
         return response()->json([
             'user' => $user,
             'token' => $token,
