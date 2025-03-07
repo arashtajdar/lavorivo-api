@@ -8,6 +8,8 @@ use App\Mail\NewEmployeeRegistration;
 use App\Mail\RequestToRegister;
 use App\Models\History;
 use App\Models\Notification;
+use App\Models\Shift;
+use App\Models\ShiftLabel;
 use App\Models\User;
 use App\Models\Shop;
 use App\Services\HistoryService;
@@ -282,7 +284,78 @@ class UserController extends Controller
         }
         return true;
     }
+    public function mainReport(Request $request){
+        $userId = auth()->id();
+        $percent = 0;
+        $shops = Shop::where('owner', $userId)->get();
+        $employees = User::where('employer', $userId)->get();
 
+        $responseData = [];
+        //Shops
+        $responseData[] = [
+            'title' => 'Shops',
+            'count' => count($shops)
+        ];
+        if(count($shops)){
+            $percent += 20;
+        }
+        //Employees
+        $responseData[] = [
+            'title' => 'Employees',
+            'count' => count($employees)
+        ];
+        if(count($employees)){
+            $percent += 20;
+        }
+        //shift labels
+        $shiftLabelCount = 0;
+        foreach ($shops as $shop) {
+            $shiftLabelCount += ShiftLabel::where('shop_id', $shop->id)->count();
+        }
+        $responseData[] = [
+            'title' => 'Shift Labels',
+            'count' => $shiftLabelCount
+        ];
+        if($shiftLabelCount){
+            $percent += 20;
+        }
+
+        //shops assigned to users
+        $shopUsers = 0;
+        foreach ($shops as $shop) {
+            $shopUser = DB::table('shop_user')
+                ->where('shop_id', $shop->id)
+                ->get();
+            $shopUsers += count($shopUser);
+        }
+        $responseData[] = [
+            'title' => 'Assigned shops',
+            'count' => $shopUsers
+        ];
+        if($shopUsers){
+            $percent += 20;
+        }
+
+        //Shifts
+        $shiftsCount = 0;
+        foreach ($shops as $shop) {
+            $shifts = Shift::where('shop_id', $shop->id)->get();
+            $shiftsCount += count($shifts);
+        }
+        $responseData[] = [
+            'title' => 'Assigned shifts',
+            'count' => $shiftsCount
+        ];
+        if($shiftsCount){
+            $percent += 20;
+        }
+        $response = [
+            'data' => $responseData,
+            'percent' => $percent
+        ];
+        return response()->json($response);
+
+    }
 
 }
 

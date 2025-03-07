@@ -100,6 +100,8 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('user/reports/main', [UserController::class, 'mainReport']);
+
     Route::post('/subscription/validate', [SubscriptionController::class, 'validatePurchase']);
     Route::post('/stripe/checkout', [StripeController::class, 'createCheckoutSession']);
     Route::get('/subscriptions', [SubscriptionController::class, 'index']);
