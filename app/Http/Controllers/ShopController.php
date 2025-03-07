@@ -84,7 +84,7 @@ class ShopController extends Controller
     {
         $shop = Shop::findOrFail($id);
         $shop->delete();
-        HistoryService::log(History::REMOVE_SHOP, $id);
+        HistoryService::log(History::REMOVE_SHOP, ['shop_id' => $id]);
 
         return response()->json(['message' => 'Shop deleted'], 200);
     }

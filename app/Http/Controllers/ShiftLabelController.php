@@ -147,7 +147,7 @@ class ShiftLabelController extends Controller
         $shiftLabel = ShiftLabel::findOrFail($id);
 
         $shiftLabel->delete();
-        HistoryService::log(History::REMOVE_LABEL, $id);
+        HistoryService::log(History::REMOVE_LABEL, ['Shift_label_id' => $id]);
 
         return response()->json(['message' => 'Shift label deleted successfully']);
     }

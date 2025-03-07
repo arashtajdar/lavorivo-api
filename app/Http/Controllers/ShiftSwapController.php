@@ -108,7 +108,7 @@ class ShiftSwapController extends Controller
             $swapRequest->save();
 
             DB::commit(); // Commit the transaction
-            HistoryService::log(History::ACCEPT_SHIFT_SWAP, $id);
+            HistoryService::log(History::ACCEPT_SHIFT_SWAP, ['shift_swap_id' => $id]);
 
             return response()->json(['message' => 'Shift swap request approved and shifts updated successfully.'], 200);
         } catch (\Exception $e) {
@@ -133,7 +133,7 @@ class ShiftSwapController extends Controller
 
         $swapRequest->status = 2; // Rejected
         $swapRequest->save();
-        HistoryService::log(History::REJECT_SHIFT_SWAP, $id);
+        HistoryService::log(History::REJECT_SHIFT_SWAP, ['shift_swap_id' => $id]);
 
         return response()->json(['message' => 'Shift swap request rejected successfully.'], 200);
     }
