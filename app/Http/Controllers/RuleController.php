@@ -42,7 +42,7 @@ class RuleController extends Controller
             'rule_type' => 'required|string',
             'rule_data' => 'required',
         ]);
-
+//{ "label_id": 18, "day": "Monday" }
         $rule = Rule::create($validated);
         HistoryService::log(History::RULE_ADDED, $validated);
 

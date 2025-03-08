@@ -267,9 +267,15 @@ class ShopController extends Controller
                 ->pluck('rule_data')->toArray();
 
             $user['shift_labels'] = $shiftLabels->map(function ($label) use ($restrictedLabels) {
+                $restrictedDaysInLabel = [];
+                foreach ($restrictedLabels as $restrictedLabel) {
+                    if ($restrictedLabel->label_id === $label->id) {
+                        $restrictedDaysInLabel[] = $restrictedLabel->day;
+                    }
+                }
                 return array_merge(
                     $label->toArray(),
-                    ['isRestricted' => in_array($label->id, $restrictedLabels)]
+                    ['restrictedDays' => $restrictedDaysInLabel]
                 );
             })->toArray();
             $user['restricted_week_days'] = Rule::where('shop_id', $shopId)
