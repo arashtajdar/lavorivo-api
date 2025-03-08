@@ -373,7 +373,7 @@ class ShiftController extends Controller
                     if (
                         isset($ruleData['label_id'], $ruleData['day']) &&
                         $ruleData['label_id'] == $label->id &&
-                        strtolower($ruleData['day']) == $dayIndex
+                        $ruleData['day'] == $dayIndex
                     ) {
                         return true; // Exclude only for the specific weekday
                     }
