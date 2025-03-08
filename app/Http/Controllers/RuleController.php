@@ -72,7 +72,7 @@ class RuleController extends Controller
         // Filter out only the rules with the same day
         $rulesToDelete = $rules->filter(function ($rule) use ($incomingRuleData) {
             $existingRuleData = $rule->rule_data;
-            return isset($existingRuleData['day']) && $existingRuleData['day'] == $incomingRuleData['day'];
+            return isset($existingRuleData['day']) && $existingRuleData['day'] == $incomingRuleData['day'] && $existingRuleData['label_id'] == $incomingRuleData['label_id'];
         });
 
         if ($rulesToDelete->isEmpty()) {
