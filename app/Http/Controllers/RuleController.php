@@ -52,25 +52,39 @@ class RuleController extends Controller
     {
         $validated = $request->validate([
             'employee_id' => 'required|exists:users,id',
-            'shop_id' => 'required|exists:shops,id', // Validation for shop_id
+            'shop_id' => 'required|exists:shops,id',
             'rule_type' => 'required|string',
-            'rule_data' => 'required',
+            'rule_data' => 'required', // Expected format: {"label_id":18, "day":"Monday"}
         ]);
 
-        $rule = Rule::where('employee_id', $validated['employee_id'])
+        $rules = Rule::where('employee_id', $validated['employee_id'])
             ->where('shop_id', $validated['shop_id'])
             ->where('rule_type', $validated['rule_type'])
-            ->where('rule_data', $validated['rule_data']) // Ensure rule_data matches
-            ->first();
+            ->get(); // Get all matching rules instead of first()
 
-        if (!$rule) {
+        if ($rules->isEmpty()) {
             return response()->json(['error' => 'Rule not found'], 404);
         }
 
-        $rule->delete(); // Delete the rule
+        // Convert `rule_data` to an array for comparison
+        $incomingRuleData = is_array($validated['rule_data']) ? $validated['rule_data'] : json_decode($validated['rule_data'], true);
+
+        // Filter out only the rules with the same day
+        $rulesToDelete = $rules->filter(function ($rule) use ($incomingRuleData) {
+            $existingRuleData = json_decode($rule->rule_data, true);
+            return isset($existingRuleData['day']) && $existingRuleData['day'] == $incomingRuleData['day'];
+        });
+
+        if ($rulesToDelete->isEmpty()) {
+            return response()->json(['error' => 'No matching rule found for the specified day'], 404);
+        }
+
+        // Delete only the matching rules
+        Rule::whereIn('id', $rulesToDelete->pluck('id'))->delete();
+
         HistoryService::log(History::RULE_REMOVED, $validated);
 
-        return response()->json(['message' => 'Rule deleted successfully'], 200);
+        return response()->json(['message' => 'Rule(s) deleted successfully'], 200);
     }
 
 
