@@ -269,8 +269,8 @@ class ShopController extends Controller
             $user['shift_labels'] = $shiftLabels->map(function ($label) use ($restrictedLabels) {
                 $restrictedDaysInLabel = [];
                 foreach ($restrictedLabels as $restrictedLabel) {
-                    if ($restrictedLabel->label_id === $label->id) {
-                        $restrictedDaysInLabel[] = $restrictedLabel->day;
+                    if ($restrictedLabel['label_id'] === $label->id) {
+                        $restrictedDaysInLabel[] = $restrictedLabel['day'];
                     }
                 }
                 return array_merge(
