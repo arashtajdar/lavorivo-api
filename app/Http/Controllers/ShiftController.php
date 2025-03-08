@@ -368,11 +368,12 @@ class ShiftController extends Controller
 
             switch ($rule->rule_type) {
                 case 'exclude_label':
+                    $dayIndex = array_search($dayName, Rule::RULE_WEEK_DAYS);
                     $ruleData = json_decode($rule->rule_data, true);
                     if (
                         isset($ruleData['label_id'], $ruleData['day']) &&
                         $ruleData['label_id'] == $label->id &&
-                        strtolower($ruleData['day']) == strtolower($dayName)
+                        strtolower($ruleData['day']) == $dayIndex
                     ) {
                         return true; // Exclude only for the specific weekday
                     }
