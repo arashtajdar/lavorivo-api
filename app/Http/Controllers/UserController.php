@@ -8,6 +8,7 @@ use App\Mail\NewEmployeeRegistration;
 use App\Mail\RequestToRegister;
 use App\Models\History;
 use App\Models\Notification;
+use App\Models\Rule;
 use App\Models\Shift;
 use App\Models\ShiftLabel;
 use App\Models\User;
@@ -359,10 +360,20 @@ class UserController extends Controller
 
         //shift rules
         $totalItems++;
+        $ruleCount = 0;
+        foreach ($employees as $employee) {
+            $rules = Rule::where('employee_id', $employee->id)->get();
+            $ruleCount += count($rules);
 
-        if(2){
+        }
+        $responseData[] = [
+            'title' => 'Shift Rules',
+            'count' => $ruleCount
+        ];
+        if($ruleCount){
             $DoneItems++;
         }
+
         $percent = round($DoneItems/$totalItems*100);
         $response = [
             'data' => $responseData,
