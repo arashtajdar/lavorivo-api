@@ -286,28 +286,33 @@ class UserController extends Controller
     }
     public function mainReport(Request $request){
         $userId = auth()->id();
+        $totalItems = 0;
+        $DoneItems = 0;
         $percent = 0;
         $shops = Shop::where('owner', $userId)->get();
         $employees = User::where('employer', $userId)->get();
 
         $responseData = [];
         //Shops
+        $totalItems++;
         $responseData[] = [
             'title' => 'Shops',
             'count' => count($shops)
         ];
         if(count($shops)){
-            $percent += 20;
+            $DoneItems++;
         }
         //Employees
+        $totalItems++;
         $responseData[] = [
             'title' => 'Employees',
             'count' => count($employees)
         ];
         if(count($employees)){
-            $percent += 20;
+            $DoneItems++;
         }
         //shift labels
+        $totalItems++;
         $shiftLabelCount = 0;
         foreach ($shops as $shop) {
             $shiftLabelCount += ShiftLabel::where('shop_id', $shop->id)->count();
@@ -317,10 +322,11 @@ class UserController extends Controller
             'count' => $shiftLabelCount
         ];
         if($shiftLabelCount){
-            $percent += 20;
+            $DoneItems++;
         }
 
         //shops assigned to users
+        $totalItems++;
         $shopUsers = 0;
         foreach ($shops as $shop) {
             $shopUser = DB::table('shop_user')
@@ -333,10 +339,11 @@ class UserController extends Controller
             'count' => $shopUsers
         ];
         if($shopUsers){
-            $percent += 20;
+            $DoneItems++;
         }
 
         //Shifts
+        $totalItems++;
         $shiftsCount = 0;
         foreach ($shops as $shop) {
             $shifts = Shift::where('shop_id', $shop->id)->get();
@@ -347,8 +354,16 @@ class UserController extends Controller
             'count' => $shiftsCount
         ];
         if($shiftsCount){
-            $percent += 20;
+            $DoneItems++;
         }
+
+        //shift rules
+        $totalItems++;
+
+        if(2){
+            $DoneItems++;
+        }
+        $percent = round($DoneItems/$totalItems*100);
         $response = [
             'data' => $responseData,
             'percent' => $percent
