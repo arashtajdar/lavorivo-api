@@ -361,18 +361,17 @@ class UserController extends Controller
         //shift rules
         $totalItems++;
         $ruleCount = 0;
-        foreach ($employees as $employee) {
-            $rules = Rule::where('employee_id', $employee->id)->get();
-            $ruleCount += count($rules);
 
+        $rulesHistory = History::where('user_id', $userId)->where('action_type', History::RULE_ADDED)->first();
+        if($rulesHistory){
+            $DoneItems++;
+            $ruleCount = 'some';
         }
         $responseData[] = [
             'title' => 'Shift Rules',
             'count' => $ruleCount
         ];
-        if($ruleCount){
-            $DoneItems++;
-        }
+
 
         $percent = round($DoneItems/$totalItems*100);
         $response = [
