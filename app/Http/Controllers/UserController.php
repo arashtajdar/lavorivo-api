@@ -111,7 +111,7 @@ class UserController extends Controller
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
                 // email already exist
-                Mail::to($validated['email'])->send(new ManagerVerification());
+//                Mail::to($validated['email'])->send(new ManagerVerification());
                 return response()->json(
                     ['message' => 'Email already Exist!'],
                     201);
