@@ -13,6 +13,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -66,7 +67,7 @@ Route::get('/email/verify/check', function (Request $request) {
 
 Route::post('/reset-password', function (Request $request) {
     // Validate the form data
-    $request->validate([
+    $requestValidated = $request->validate([
         'token' => 'required',
         'email' => 'required|email',
         'password' => 'required|confirmed|min:8',
@@ -84,8 +85,10 @@ Route::post('/reset-password', function (Request $request) {
 
     // Check if the password reset was successful
     if ($status === Password::PASSWORD_RESET) {
+        Log::error('Password rested', $requestValidated);
         return response()->json(['message' => 'Password has been reset successfully!']);
     }
+    Log::error('Password reset ERROR!', ['error' => __($status)]);
 
     return response()->json(['error' => __($status)], 400);
 });
