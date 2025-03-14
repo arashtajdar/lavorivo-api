@@ -11,8 +11,7 @@
     <h1 class="text-2xl font-semibold text-center mb-4">Reset Your Password</h1>
     <form method="POST" action="{{ url('/api/reset-password') }}" class="space-y-4">
         @csrf
-        <input type="hidden" name="token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">
-
+        <input type="hidden" name="token" value="{{ $token }}">
         <div>
             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
             <input type="email" id="email" name="email" required class="mt-1 block w-full p-2 border rounded-md">
