@@ -88,7 +88,10 @@ Route::post('/reset-password', function (Request $request) {
         Log::error('Password rested', $requestValidated);
         return response()->json(['message' => 'Password has been reset successfully!']);
     }
-    Log::error('Password reset ERROR!', ['error' => __($status)]);
+    Log::error('Password reset ERROR!', [
+        'error' => __($status),
+        'data' => $requestValidated
+    ]);
 
     return response()->json(['error' => __($status)], 400);
 });
