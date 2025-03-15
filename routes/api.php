@@ -56,6 +56,26 @@ Route::post('/email/resend', function (Request $request) {
     return response()->json(['message' => 'Verification link sent']);
 })->middleware(['auth:sanctum', 'throttle:6,1']);
 
+Route::post('/email/resend-for-employee', function (Request $request) {
+    $validated = $request->validate([
+        'employee_id' => 'required|exists:users,id'
+    ]);
+
+    $employerId = auth()->id(); // Current logged-in user
+    $employee = User::where('id', $validated['employee_id'])->where('employer', $employerId)->first();
+
+    if (!$employee) {
+        return response()->json(['error' => 'Employee not found or unauthorized'], 403);
+    }
+
+    if ($employee->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Employee email is already verified']);
+    }
+
+    $employee->sendEmailVerificationNotification();
+    return response()->json(['message' => 'Verification link sent to employee']);
+})->middleware(['auth:sanctum', 'throttle:6,1']);
+
 
 Route::get('/email/verify/check', function (Request $request) {
     return response()->json([
