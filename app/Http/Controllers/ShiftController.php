@@ -309,6 +309,25 @@ class ShiftController extends Controller
                 $shuffledEmployees = $employees->shuffle();
 
                 foreach ($shuffledEmployees as $employee) {
+                    $maxShifts = $employee->max_shifts_per_week;
+
+                    // Get the start and end of the current week (Monday - Sunday)
+                    $weekStart = Carbon::parse($dateString)->startOfWeek();
+                    $weekEnd = Carbon::parse($dateString)->endOfWeek();
+
+                    // Count assigned shifts for this employee in the current week
+                    $weeklyShiftCount = Shift::where('shop_id', $shopId)
+                        ->whereBetween('date', [$weekStart, $weekEnd])
+                        ->get()
+                        ->sum(function ($shift) use ($employee) {
+                            $shiftData = json_decode($shift->shift_data, true);
+                            return count(array_filter($shiftData, fn($s) => $s['userId'] == $employee->id));
+                        });
+
+                    // Check if employee has reached their max shifts per week
+                    if ($weeklyShiftCount >= $maxShifts) {
+                        continue; // Skip this employee
+                    }
                     // Check if the employee has an off-day on this date
                     if (isset($offDays[$employee->id]) && $offDays[$employee->id]->contains('off_date', $dateString)) {
                         continue; // Skip employee if they have an off-day
