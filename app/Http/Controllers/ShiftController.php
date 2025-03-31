@@ -320,7 +320,7 @@ class ShiftController extends Controller
                         ->whereBetween('date', [$weekStart, $weekEnd])
                         ->get()
                         ->sum(function ($shift) use ($employee) {
-                            $shiftData = json_decode($shift->shift_data, true);
+                            $shiftData = $shift->shift_data;
                             return count(array_filter($shiftData, fn($s) => $s['userId'] == $employee->id));
                         });
 
