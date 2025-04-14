@@ -21,24 +21,24 @@ class ShopControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a user with employer role
         $this->user = User::factory()->create([
             'employer' => null,
         ]);
-        
+
         // Create a shop owned by the user
         $this->shop = Shop::factory()->create([
             'owner' => $this->user->id,
             'name' => 'Test Shop',
             'location' => 'Test Location',
         ]);
-        
+
         // Mock the ShopService
         $this->shopService = Mockery::mock(ShopService::class);
         $this->app->instance(ShopService::class, $this->shopService);
     }
-    
+
     protected function tearDown(): void
     {
         Mockery::close();
@@ -55,15 +55,17 @@ class ShopControllerTest extends TestCase
         // Mock the ShopService to return a shop
         $newShop = Shop::factory()->make([
             'id' => 123,
-            'owner' => $this->user->id,
             'name' => 'New Shop',
             'location' => 'New Location',
+            'owner' => $this->user->id,
+            'created_at' => time(),
+            'updated_at' => time(),
         ]);
-        
+
         $this->shopService->shouldReceive('createShop')
             ->once()
             ->andReturn($newShop);
-        
+
         $shopData = [
             'name' => 'New Shop',
             'location' => 'New Location',
@@ -97,7 +99,7 @@ class ShopControllerTest extends TestCase
     {
         // Create another user to add to the shop
         $employee = User::factory()->create();
-        
+
         // Mock the ShopService to return a success response
         $this->shopService->shouldReceive('addUserToShop')
             ->once()
@@ -113,7 +115,7 @@ class ShopControllerTest extends TestCase
                 'message' => 'User added to shop successfully.',
             ]);
     }
-    
+
     /**
      * Test toggling shop state
      *
@@ -129,19 +131,19 @@ class ShopControllerTest extends TestCase
             'location' => 'Test Location',
             'state' => true,
         ]);
-        
+
         $this->shopService->shouldReceive('toggleState')
             ->once()
             ->with($this->user, $this->shop->id, true)
             ->andReturn($updatedShop);
-        
+
         $response = $this->actingAs($this->user)
             ->patchJson("/api/shops/{$this->shop->id}/toggle-state/1");
-        
+
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Shop state updated successfully',
                 'state' => true,
             ]);
     }
-} 
+}
