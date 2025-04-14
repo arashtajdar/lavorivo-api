@@ -2,91 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\History;
-use App\Models\Notification;
-use App\Models\Subscription;
-use App\Services\HistoryService;
-use App\Services\NotificationService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function __construct(protected AuthService $authService) {}
+
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        // Check credentials
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            Log::error('Invalid credentials', $validated);
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
-
-        // Generate token
-        $user = Auth::user();
-        $token = $user->createToken('Personal Access Token')->plainTextToken;
-        HistoryService::log(History::USER_LOGIN, []);
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
+        return $this->authService->login($request->validated());
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request): JsonResponse
     {
-        // Validate the request data
-        $validate = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-        // Create the user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => User::USER_ROLE_MANAGER,
-            'subscription_id' => Subscription::DEFAULT_SUBSCRIPTION_ID,
-            'password' => Hash::make($request->password), // Hash the password
-        ]);
-        $user->sendEmailVerificationNotification();
-
-        // Generate token
-        $token = $user->createToken('Personal Access Token')->plainTextToken;
-
-        $message = "Welcome! To begin using the system, create a new shop, create some users and then add shops to the users so you can start managing the shifts.";
-        NotificationService::create($user->id, Notification::NOTIFICATION_TYPE_SYSTEM, $message, []);
-
-        // Return response
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        return $this->authService->register($request->validated());
     }
 
-
-    public function forgotPassword(Request $request)
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ]);
-
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => __($status)]);
-        }
-        HistoryService::log(History::USER_FORGET_PASSWORD_REQUEST, []);
-
-        return response()->json(['error' => __($status)], 400);
+        return $this->authService->forgotPassword($request->validated());
     }
-
 }
