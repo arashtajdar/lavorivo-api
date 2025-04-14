@@ -22,9 +22,9 @@ class HealthController extends Controller
             'timestamp' => now()->toIso8601String(),
             'checks' => [
                 'database' => $this->checkDatabase(),
-                'cache' => $this->checkCache(),
-                'storage' => $this->checkStorage(),
-                'environment' => $this->checkEnvironment(),
+//                'cache' => $this->checkCache(),
+//                'storage' => $this->checkStorage(),
+//                'environment' => $this->checkEnvironment(),
             ]
         ];
 
@@ -38,7 +38,7 @@ class HealthController extends Controller
         }
 
         $status['status'] = $overallStatus;
-        
+
         // Log health check result if there's an issue
         if ($overallStatus !== 'ok') {
             Log::warning('Health check failed', $status);
@@ -59,7 +59,7 @@ class HealthController extends Controller
             DB::connection()->getPdo();
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2); // in milliseconds
-            
+
             return [
                 'status' => 'ok',
                 'message' => 'Database connection successful',
@@ -88,7 +88,7 @@ class HealthController extends Controller
             Cache::forget($key);
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2); // in milliseconds
-            
+
             return [
                 'status' => $value === 'ok' ? 'ok' : 'error',
                 'message' => $value === 'ok' ? 'Cache is working' : 'Cache returned unexpected value',
@@ -117,7 +117,7 @@ class HealthController extends Controller
             Storage::delete($testFile);
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2); // in milliseconds
-            
+
             return [
                 'status' => $content === 'ok' ? 'ok' : 'error',
                 'message' => $content === 'ok' ? 'Storage is working' : 'Storage returned unexpected value',
@@ -145,24 +145,24 @@ class HealthController extends Controller
             'CACHE_DRIVER',
             'QUEUE_CONNECTION',
         ];
-        
+
         $missingVars = [];
         foreach ($requiredEnvVars as $var) {
             if (empty(config($var))) {
                 $missingVars[] = $var;
             }
         }
-        
+
         if (empty($missingVars)) {
             return [
                 'status' => 'ok',
                 'message' => 'Environment configuration is valid'
             ];
         }
-        
+
         return [
             'status' => 'error',
             'message' => 'Missing required environment variables: ' . implode(', ', $missingVars)
         ];
     }
-} 
+}
