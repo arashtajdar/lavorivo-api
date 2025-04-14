@@ -12,6 +12,7 @@ use App\Repositories\ShopRepository;
 use App\Services\NotificationService;
 use App\Services\HistoryService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 
 class ShopService
 {
