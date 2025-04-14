@@ -54,6 +54,7 @@ class ShopControllerTest extends TestCase
     {
         // Mock the ShopService to return a shop
         $newShop = Shop::factory()->make([
+            'id' => 123,
             'owner' => $this->user->id,
             'name' => 'New Shop',
             'location' => 'New Location',
