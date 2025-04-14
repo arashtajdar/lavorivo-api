@@ -15,7 +15,6 @@ class ShiftSwapController extends Controller
         $this->shiftSwapRequestService = $shiftSwapRequestService;
     }
 
-    // Create a shift swap request
     public function requestSwap(CreateShiftSwapRequest $request)
     {
         $validated = $request->validated();
@@ -24,14 +23,12 @@ class ShiftSwapController extends Controller
         return response()->json($swapRequest, 201);
     }
 
-    // Fetch all shift swap requests
     public function getRequests()
     {
         $requests = $this->shiftSwapRequestService->getAllRequests();
         return response()->json($requests, 200);
     }
 
-    // Fetch requests for the logged-in user
     public function getUserRequests()
     {
         $userId = Auth::id();
@@ -39,7 +36,6 @@ class ShiftSwapController extends Controller
         return response()->json($requests, 200);
     }
 
-    // Approve a shift swap request
     public function approveRequest(ApproveShiftSwapRequest $request, $id)
     {
         $isApproved = $this->shiftSwapRequestService->approveRequest($id);
@@ -51,7 +47,6 @@ class ShiftSwapController extends Controller
         return response()->json(['error' => 'Failed to approve shift swap request.'], 400);
     }
 
-    // Reject a shift swap request
     public function rejectRequest($id)
     {
         $isRejected = $this->shiftSwapRequestService->rejectRequest($id);

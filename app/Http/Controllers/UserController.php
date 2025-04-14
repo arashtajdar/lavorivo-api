@@ -25,20 +25,17 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
-    // List all users
     public function index()
     {
         return response()->json(User::with('shops')->get());
     }
 
-    // Show a specific user
     public function show($id)
     {
         $user = User::findOrFail($id);
         return response()->json($user);
     }
 
-    // Create a new user
     public function store(Request $request)
     {
         try {
@@ -51,12 +48,12 @@ class UserController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors(), // Returns detailed validation error messages
-            ], 422); // HTTP status code for Unprocessable Entity
+                'errors' => $e->errors(),
+            ], 422);
         }
 
 
-        $validated['password'] = bcrypt($validated['password']); // Hash password
+        $validated['password'] = bcrypt($validated['password']);
 
         $user = User::create($validated);
 
@@ -107,8 +104,6 @@ class UserController extends Controller
 
             $user = User::firstWhere('email', $validated['email']);
             if ($user) {
-                // email already exist
-//                Mail::to($validated['email'])->send(new ManagerVerification());
                 return response()->json(
                     ['message' => 'Email already Exist!'],
                     201);
@@ -116,9 +111,8 @@ class UserController extends Controller
                 $rawPassword = substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8);
                 $validated['password'] = bcrypt($rawPassword);
                 $validated['employer'] = $currentManagerId;
-                $validated['role'] = 1; // Assuming '1' is the role for employees
+                $validated['role'] = 1;
 
-                // Create the new user
                 $user = User::create($validated);
 
                 $verificationUrl = URL::temporarySignedRoute(
@@ -130,7 +124,6 @@ class UserController extends Controller
                     ]
                 );
 
-                // Send email with password and verification link
                 Mail::to($validated['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
                 $message = "New employee created: ". $user->email;
                 NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, $message, ["id" => $user->id]);
@@ -155,18 +148,12 @@ class UserController extends Controller
         }
     }
 
-    // Delete a user
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-
-        // Delete all shops owned by this user (Using `ownedShops` relation)
         $user->ownedShops()->delete();
-
-        // Delete all employees managed by this user (Using `employees` relation)
         $user->employees()->delete();
 
-        // Delete the user itself
         $user->delete();
         HistoryService::log(History::USER_DELETED_ACCOUNT, [
             "user_id" => $id,
@@ -176,7 +163,6 @@ class UserController extends Controller
     }
 
 
-    // Retrieve users connected to a specific shop
     public function usersByShop($shopId)
     {
         $currentUser = auth()->user();

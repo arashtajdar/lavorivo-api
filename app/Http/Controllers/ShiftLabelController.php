@@ -76,7 +76,7 @@ class ShiftLabelController extends Controller
         }
 
         $validated = $request->validated();
-        $updated = $this->shiftLabelService->updateShiftLabel($id, $validated);
+        $this->shiftLabelService->updateShiftLabel($id, $validated);
 
         HistoryService::log(History::UPDATE_LABEL, $validated);
         return response()->json($shiftLabel);
