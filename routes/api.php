@@ -24,8 +24,7 @@ Route::get('/health', function () { echo "it is ok";});
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
-Route::get('/shops/employer', [ShopController::class, 'shopsByEmployer']);
-Route::get('/shops/{shopId}/users', [ShopController::class, 'usersByShop']);
+
 
 // Email verification routes
 Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
@@ -46,10 +45,8 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
 // Stripe routes
 Route::prefix('stripe')->group(function () {
-    // Webhook endpoint - no auth required as it's called by Stripe
     Route::post('/webhook', [StripeController::class, 'handleWebhook']);
-    
-    // Protected Stripe endpoints
+
     Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/checkout', [StripeController::class, 'createCheckoutSession']);
     });
@@ -64,7 +61,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::put('/change-password', [UserController::class, 'changePassword']);
         Route::get('/reports/main', [UserController::class, 'mainReport']);
     });
-    
+
     // User management routes
     Route::prefix('users')->group(function () {
         Route::get('/employer', [UserController::class, 'usersByEmployer']);
@@ -74,7 +71,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/removeEmployee', [UserController::class, 'removeEmployee']);
         Route::apiResource('/', UserController::class)->except(['create', 'edit']);
     });
-    
+
     // Shop routes
     Route::prefix('shops')->group(function () {
         Route::get('/employer', [ShopController::class, 'shopsByEmployer']);
@@ -85,9 +82,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/{shopId}/users', [ShopController::class, 'addUserToShop']);
         Route::delete('/{shopId}/users/{userId}', [ShopController::class, 'removeUserFromShop']);
         Route::get('/{shopId}/rules', [ShopController::class, 'getShopRules']);
+        Route::get('/{shopId}/users', [ShopController::class, 'usersByShop']);
         Route::apiResource('/', ShopController::class)->except(['create', 'edit']);
     });
-    
+
     // Shift routes
     Route::prefix('shifts')->group(function () {
         Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
@@ -96,7 +94,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/auto', [ShiftController::class, 'auto']);
         Route::apiResource('/', ShiftController::class)->except(['create', 'edit']);
     });
-    
+
     // Shift label routes
     Route::prefix('shift-labels')->group(function () {
         Route::get('/all', [ShiftLabelController::class, 'getAllShiftLabels']);
@@ -104,7 +102,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::patch('/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
         Route::apiResource('/', ShiftLabelController::class)->except(['create', 'edit']);
     });
-    
+
     // Shift swap routes
     Route::prefix('shift-swap')->group(function () {
         Route::post('/request', [ShiftSwapController::class, 'requestSwap']);
@@ -113,26 +111,26 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/reject/{id}', [ShiftSwapController::class, 'rejectRequest']);
         Route::get('/user-requests', [ShiftSwapController::class, 'getUserRequests']);
     });
-    
+
     // User off days routes
     Route::prefix('user-off-days')->group(function () {
         Route::get('/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
         Route::post('/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
         Route::resource('/', UserOffDayController::class)->except(['create', 'edit']);
     });
-    
+
     // Rule routes
     Route::prefix('rules')->group(function () {
         Route::post('/deleteByParams', [RuleController::class, 'deleteByParams']);
         Route::apiResource('/', RuleController::class)->except(['create', 'edit']);
     });
-    
+
     // Notification routes
     Route::prefix('notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::post('/read/{id}', [NotificationController::class, 'markAsRead']);
     });
-    
+
     // Subscription routes
     Route::prefix('subscription')->group(function () {
         Route::post('/validate', [SubscriptionController::class, 'validatePurchase']);
