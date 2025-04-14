@@ -358,4 +358,56 @@ class ShopControllerTest extends TestCase
             ->assertJson(['is_admin' => true]);
     }
 
+    /**
+     * Test toggleState method toggles the state of a shop
+     */
+    public function test_toggle_state()
+    {
+        // Authenticate user
+        $this->actingAs($this->user);
+
+        // Mock the service to toggle the state
+        $this->shopServiceMock->shouldReceive('toggleState')
+            ->once()
+            ->with($this->user, $this->shop->id, true)
+            ->andReturn($this->shop);
+
+        // Make the request
+        $response = $this->postJson("/api/shops/{$this->shop->id}/toggle-state", ['state' => 1]);
+
+        // Assert response
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Shop state updated successfully',
+                'state' => $this->shop->state
+            ]);
+    }
+
+    /**
+     * Test getShopRules method returns rules for a shop
+     */
+    public function test_get_shop_rules()
+    {
+        // Authenticate user
+        $this->actingAs($this->user);
+
+        // Prepare test data
+        $rules = [
+            'rule1' => 'No smoking',
+            'rule2' => 'No pets allowed'
+        ];
+
+        // Mock the service to return rules
+        $this->shopServiceMock->shouldReceive('getShopRules')
+            ->once()
+            ->with($this->shop->id)
+            ->andReturn($rules);
+
+        // Make the request
+        $response = $this->getJson("/api/shops/{$this->shop->id}/rules");
+
+        // Assert response
+        $response->assertStatus(200)
+            ->assertJson($rules);
+    }
 }
