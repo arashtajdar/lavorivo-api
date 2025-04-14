@@ -12,7 +12,7 @@ class Shop extends Model
     const SHOP_USER_ROLE_MANAGER = 2;
     use HasFactory;
 
-    protected $fillable = ['name', 'location', 'owner'];
+    protected $fillable = ['name', 'description', 'address', 'owner', 'state'];
 
     public function users()
     {
