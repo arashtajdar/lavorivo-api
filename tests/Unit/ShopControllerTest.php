@@ -258,4 +258,133 @@ class ShopControllerTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
+    /**
+     * Test grantAdminAccess method
+     */
+    public function test_grant_admin_access()
+    {
+        // Create a mock request
+        $request = Mockery::mock(Request::class);
+
+        // Create a mock user
+        $userToGrant = Mockery::mock(User::class);
+        $userToGrant->shouldReceive('getAttribute')->with('id')->andReturn(2);
+
+        // Mock the service to update the user role
+        $this->shopServiceMock->shouldReceive('updateUserRoleInShop')
+            ->once()
+            ->with($this->shop, $userToGrant, Shop::SHOP_USER_ROLE_MANAGER)
+            ->andReturn(true);
+
+        // Call the method
+        $response = $this->shopController->grantAdminAccess($request, $this->shop, $userToGrant);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['message' => 'Admin access granted successfully'], json_decode($response->getContent(), true));
+    }
+
+    /**
+     * Test revokeAdminAccess method
+     */
+    public function test_revoke_admin_access()
+    {
+        // Create a mock request
+        $request = Mockery::mock(Request::class);
+
+        // Create a mock user
+        $userToRevoke = Mockery::mock(User::class);
+        $userToRevoke->shouldReceive('getAttribute')->with('id')->andReturn(2);
+
+        // Mock the service to update the user role
+        $this->shopServiceMock->shouldReceive('updateUserRoleInShop')
+            ->once()
+            ->with($this->shop, $userToRevoke, Shop::SHOP_USER_ROLE_CUSTOMER)
+            ->andReturn(true);
+
+        // Call the method
+        $response = $this->shopController->revokeAdminAccess($request, $this->shop, $userToRevoke);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['message' => 'Admin access revoked successfully'], json_decode($response->getContent(), true));
+    }
+
+    /**
+     * Test userIsShopAdmin method
+     */
+    public function test_user_is_shop_admin()
+    {
+        // Create a mock user
+        $userToCheck = Mockery::mock(User::class);
+        $userToCheck->shouldReceive('getAttribute')->with('id')->andReturn(2);
+
+        // Mock the service to check admin status
+        $this->shopServiceMock->shouldReceive('userIsShopAdmin')
+            ->once()
+            ->with($this->shop, $userToCheck)
+            ->andReturn(true);
+
+        // Call the method
+        $response = $this->shopController->userIsShopAdmin($this->shop, $userToCheck);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['is_admin' => true], json_decode($response->getContent(), true));
+    }
+
+    /**
+     * Test toggleState method
+     */
+    public function test_toggle_state()
+    {
+        // Mock Auth facade
+        Auth::shouldReceive('user')->andReturn($this->user);
+
+        // Mock the service to toggle the state
+        $this->shopServiceMock->shouldReceive('toggleState')
+            ->once()
+            ->with($this->user, 1, true)
+            ->andReturn($this->shop);
+
+        // Call the method
+        $response = $this->shopController->toggleState(1, 1);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals([
+            'message' => 'Shop state updated successfully',
+            'state' => true
+        ], json_decode($response->getContent(), true));
+    }
+
+    /**
+     * Test getShopRules method
+     */
+    public function test_get_shop_rules()
+    {
+        // Prepare test data
+        $rules = [
+            'rule1' => 'No smoking',
+            'rule2' => 'No pets allowed'
+        ];
+
+        // Mock the service to return rules
+        $this->shopServiceMock->shouldReceive('getShopRules')
+            ->once()
+            ->with(1)
+            ->andReturn($rules);
+
+        // Call the method
+        $response = $this->shopController->getShopRules(1);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals($rules, json_decode($response->getContent(), true));
+    }
 }
