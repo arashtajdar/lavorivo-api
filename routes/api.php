@@ -13,11 +13,7 @@ use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
-use App\Models\User;
 
 // Public routes
 Route::get('/health', function () { echo "it is ok";});
@@ -69,7 +65,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/reject-manager', [UserController::class, 'rejectManager']);
         Route::post('/addEmployee', [UserController::class, 'addEmployee']);
         Route::post('/removeEmployee', [UserController::class, 'removeEmployee']);
-        Route::apiResource('/', UserController::class)->except(['create', 'edit']);
+        Route::apiResource('/', UserController::class)->except(['create', 'edit'])->names('users');
     });
 
     // Shop routes
@@ -83,7 +79,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::delete('/{shopId}/users/{userId}', [ShopController::class, 'removeUserFromShop']);
         Route::get('/{shopId}/rules', [ShopController::class, 'getShopRules']);
         Route::get('/{shopId}/users', [ShopController::class, 'usersByShop']);
-        Route::apiResource('/', ShopController::class)->except(['create', 'edit']);
+        Route::apiResource('/', ShopController::class)->except(['create', 'edit'])->names('shops');
     });
 
     // Shift routes
@@ -92,7 +88,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
         Route::post('/removeByParams', [ShiftController::class, 'removeShift']);
         Route::post('/auto', [ShiftController::class, 'auto']);
-        Route::apiResource('/', ShiftController::class)->except(['create', 'edit']);
+        Route::apiResource('/', ShiftController::class)->except(['create', 'edit'])->names('shifts');
     });
 
     // Shift label routes
@@ -100,7 +96,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/all', [ShiftLabelController::class, 'getAllShiftLabels']);
         Route::get('/active', [ShiftLabelController::class, 'getAllActive']);
         Route::patch('/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
-        Route::apiResource('/', ShiftLabelController::class)->except(['create', 'edit']);
+        Route::apiResource('/', ShiftLabelController::class)->except(['create', 'edit'])->names('shift-labels');
     });
 
     // Shift swap routes
@@ -116,13 +112,13 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::prefix('user-off-days')->group(function () {
         Route::get('/listOffDaysToManage', [UserOffDayController::class, 'listOffDaysToManage']);
         Route::post('/UpdateOffDayStatus', [UserOffDayController::class, 'UpdateOffDayStatus']);
-        Route::resource('/', UserOffDayController::class)->except(['create', 'edit']);
+        Route::resource('/', UserOffDayController::class)->except(['create', 'edit'])->names('user-off-days');
     });
 
     // Rule routes
     Route::prefix('rules')->group(function () {
         Route::post('/deleteByParams', [RuleController::class, 'deleteByParams']);
-        Route::apiResource('/', RuleController::class)->except(['create', 'edit']);
+        Route::apiResource('/', RuleController::class)->except(['create', 'edit'])->names('rules');
     });
 
     // Notification routes
