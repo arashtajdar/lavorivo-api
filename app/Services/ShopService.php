@@ -93,9 +93,9 @@ class ShopService
         return $shop->users()->get();
     }
 
-    public function updateUserRoleInShop(Shop $shop, User $user, int $role): void
+    public function updateUserRoleInShop(Shop $shop, User $user, int $role): bool
     {
-        $shop->users()->updateExistingPivot($user->id, ['role' => $role]);
+        return $shop->users()->updateExistingPivot($user->id, ['role' => $role]) > 0;
     }
 
     public function userIsShopAdmin(Shop $shop, User $user): bool
