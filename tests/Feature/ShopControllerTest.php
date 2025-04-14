@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\ShopService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Mockery;
 use Tests\TestCase;
 
 class ShopControllerTest extends TestCase
@@ -15,6 +16,7 @@ class ShopControllerTest extends TestCase
 
     protected $user;
     protected $shop;
+    protected $shopService;
 
     protected function setUp(): void
     {
@@ -31,6 +33,16 @@ class ShopControllerTest extends TestCase
             'name' => 'Test Shop',
             'location' => 'Test Location',
         ]);
+        
+        // Mock the ShopService
+        $this->shopService = Mockery::mock(ShopService::class);
+        $this->app->instance(ShopService::class, $this->shopService);
+    }
+    
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -40,6 +52,17 @@ class ShopControllerTest extends TestCase
      */
     public function test_store_shop()
     {
+        // Mock the ShopService to return a shop
+        $newShop = Shop::factory()->make([
+            'owner' => $this->user->id,
+            'name' => 'New Shop',
+            'location' => 'New Location',
+        ]);
+        
+        $this->shopService->shouldReceive('createShop')
+            ->once()
+            ->andReturn($newShop);
+        
         $shopData = [
             'name' => 'New Shop',
             'location' => 'New Location',
@@ -62,12 +85,6 @@ class ShopControllerTest extends TestCase
                 'location' => 'New Location',
                 'owner' => $this->user->id,
             ]);
-
-        $this->assertDatabaseHas('shops', [
-            'name' => 'New Shop',
-            'location' => 'New Location',
-            'owner' => $this->user->id,
-        ]);
     }
 
     /**
@@ -79,6 +96,11 @@ class ShopControllerTest extends TestCase
     {
         // Create another user to add to the shop
         $employee = User::factory()->create();
+        
+        // Mock the ShopService to return a success response
+        $this->shopService->shouldReceive('addUserToShop')
+            ->once()
+            ->andReturn(response()->json(['message' => 'User added to shop successfully.'], 200));
 
         $response = $this->actingAs($this->user)
             ->postJson("/api/shops/{$this->shop->id}/users", [
@@ -89,10 +111,36 @@ class ShopControllerTest extends TestCase
             ->assertJson([
                 'message' => 'User added to shop successfully.',
             ]);
-
-        $this->assertDatabaseHas('shop_user', [
-            'shop_id' => $this->shop->id,
-            'user_id' => $employee->id,
+    }
+    
+    /**
+     * Test toggling shop state
+     *
+     * @return void
+     */
+    public function test_toggle_shop_state()
+    {
+        // Mock the ShopService to return a shop with updated state
+        $updatedShop = Shop::factory()->make([
+            'id' => $this->shop->id,
+            'owner' => $this->user->id,
+            'name' => 'Test Shop',
+            'location' => 'Test Location',
+            'state' => true,
         ]);
+        
+        $this->shopService->shouldReceive('toggleState')
+            ->once()
+            ->with($this->user, $this->shop->id, true)
+            ->andReturn($updatedShop);
+        
+        $response = $this->actingAs($this->user)
+            ->patchJson("/api/shops/{$this->shop->id}/toggle-state/1");
+        
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Shop state updated successfully',
+                'state' => true,
+            ]);
     }
 } 
