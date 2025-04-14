@@ -134,4 +134,128 @@ class ShopControllerTest extends TestCase
         $this->assertEquals(['message' => 'Shop deleted'], json_decode($response->getContent(), true));
     }
 
+    /**
+     * Test addUserToShop method
+     */
+    public function test_add_user_to_shop()
+    {
+        // Create a mock request
+        $request = Mockery::mock(AddUserToShopRequest::class);
+        $request->shouldReceive('validated')->andReturn([
+            'user_id' => 2
+        ]);
+
+        // Create a mock user
+        $newUser = Mockery::mock(User::class);
+        $newUser->shouldReceive('getAttribute')->with('id')->andReturn(2);
+
+        // Mock User::findOrFail
+        User::shouldReceive('findOrFail')
+            ->once()
+            ->with(2)
+            ->andReturn($newUser);
+
+        // Mock the repository to find the shop
+        $this->shopRepositoryMock->shouldReceive('findById')
+            ->once()
+            ->with(1)
+            ->andReturn($this->shop);
+
+        // Mock the service to add the user
+        $this->shopServiceMock->shouldReceive('addUserToShop')
+            ->once()
+            ->with($this->shop, $newUser)
+            ->andReturn(['message' => 'User added to shop successfully']);
+
+        // Call the method
+        $response = $this->shopController->addUserToShop($request, 1);
+
+        // Assert response
+        $this->assertEquals(['message' => 'User added to shop successfully'], $response);
+    }
+
+    /**
+     * Test removeUserFromShop method
+     */
+    public function test_remove_user_from_shop()
+    {
+        // Create a mock user
+        $userToRemove = Mockery::mock(User::class);
+        $userToRemove->shouldReceive('getAttribute')->with('id')->andReturn(2);
+
+        // Mock User::findOrFail
+        User::shouldReceive('findOrFail')
+            ->once()
+            ->with(2)
+            ->andReturn($userToRemove);
+
+        // Mock the repository to find the shop
+        $this->shopRepositoryMock->shouldReceive('findById')
+            ->once()
+            ->with(1)
+            ->andReturn($this->shop);
+
+        // Mock the service to remove the user
+        $this->shopServiceMock->shouldReceive('removeUserFromShop')
+            ->once()
+            ->with($this->shop, $userToRemove)
+            ->andReturn(['message' => 'User removed from shop successfully']);
+
+        // Call the method
+        $response = $this->shopController->removeUserFromShop(1, 2);
+
+        // Assert response
+        $this->assertEquals(['message' => 'User removed from shop successfully'], $response);
+    }
+
+    /**
+     * Test shopsByEmployer method
+     */
+    public function test_shops_by_employer()
+    {
+        // Mock Auth facade
+        Auth::shouldReceive('user')->andReturn($this->user);
+
+        // Mock the service to return shops
+        $this->shopServiceMock->shouldReceive('getShopsByEmployer')
+            ->once()
+            ->with($this->user)
+            ->andReturn([$this->shop]);
+
+        // Call the method
+        $response = $this->shopController->shopsByEmployer();
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    /**
+     * Test usersByShop method
+     */
+    public function test_users_by_shop()
+    {
+        // Create a mock user
+        $shopUser = Mockery::mock(User::class);
+
+        // Mock Shop::findOrFail
+        Shop::shouldReceive('findOrFail')
+            ->once()
+            ->with(1)
+            ->andReturn($this->shop);
+
+        // Mock the service to return users
+        $this->shopServiceMock->shouldReceive('getUsersByShop')
+            ->once()
+            ->with($this->shop)
+            ->andReturn([$shopUser]);
+
+        // Call the method
+        $response = $this->shopController->usersByShop(1);
+
+        // Assert response
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
 }
