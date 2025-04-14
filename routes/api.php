@@ -13,10 +13,11 @@ use App\Http\Controllers\StripeController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserOffDayController;
+use App\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
-Route::get('/health', function () { echo "it is ok";});
+Route::get('/health', [HealthController::class, 'check']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
