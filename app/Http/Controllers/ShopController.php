@@ -1,293 +1,124 @@
 <?php
-
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Shop\AddUserToShopRequest;
+use App\Http\Requests\Shop\StoreShopRequest;
+use App\Http\Requests\Shop\UpdateShopRequest;
 use App\Models\History;
-use App\Models\Notification;
-use App\Models\Rule;
-use App\Models\ShiftLabel;
 use App\Models\Shop;
-use App\Models\User;
+use App\Services\ShopService;
 use App\Services\HistoryService;
-use App\Services\NotificationService;
+use App\Repositories\ShopRepository;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class ShopController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    protected $shopService;
+    protected $shopRepository;
+
+    public function __construct(ShopService $shopService, ShopRepository $shopRepository)
     {
-        return Shop::all();
+        $this->shopService = $shopService;
+        $this->shopRepository = $shopRepository;
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreShopRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'location' => 'nullable|string|max:255',
-        ]);
-        $request['owner'] = auth()->id();
-        if(auth()->user()->employer){
-            Log::error('Cannot create shop because customer has employer', $validated);
-            return response()->json(["message" => "You cannot create a new shop!"], 403);
-        }
-        if(count(auth()->user()->ownedShops) >= auth()->user()->subscription->maximum_shops){
-            Log::error("Maximum shops reached. Upgrade to have more shops!", $validated);
-            return response()->json(["message" => "Maximum shops reached. Upgrade to have more shops!"], 400);
-        }
-        $shop = Shop::create($request->all());
-        HistoryService::log(History::ADD_SHOP, $validated);
+        $validated = $request->validated();
+        $validated['owner'] = auth()->id();
 
-        $message = "New shop created: ". $shop->name;
-        NotificationService::create(auth()->id(), Notification::NOTIFICATION_TYPE_NEW_SHOP_CREATED, $message, ["shopId" => $shop->id]);
-
+        $shop = $this->shopService->createShop($validated, auth()->user());
         return response()->json($shop, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function update(UpdateShopRequest $request, $id)
     {
-        return Shop::findOrFail($id);
-    }
+        $shop = $this->shopRepository->findById($id);
+        $validated = $request->validated();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        $shop = Shop::findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'location' => 'sometimes|string|max:255',
-        ]);
-
-        $shop->update($request->all());
+        $shop->update($validated);
         HistoryService::log(History::UPDATE_SHOP, $validated);
 
         return response()->json($shop);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $shop = Shop::findOrFail($id);
-        $shop->delete();
+        $this->shopRepository->deleteById($id);
         HistoryService::log(History::REMOVE_SHOP, ['shop_id' => $id]);
 
         return response()->json(['message' => 'Shop deleted'], 200);
     }
 
-    public function addUserToShop(Request $request, $shopId)
+    public function addUserToShop(AddUserToShopRequest $request, $shopId)
     {
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
-
-        $shop = Shop::findOrFail($shopId);
+        $validated = $request->validated();
+        $shop = $this->shopRepository->findById($shopId);
         $user = User::findOrFail($validated['user_id']);
 
-        // Attach the user to the shop if not already attached
-        if (!$shop->users()->where('user_id', $user->id)->exists()) {
-            $shop->users()->attach($user->id);
-            return response()->json(['message' => 'User added to shop successfully.'], 200);
-        }
-        HistoryService::log(History::ADD_USER_TO_SHOP, [
-            'shop_id' => $shopId,
-            'user_id' => $user->id,
-        ]);
-
-        return response()->json(['message' => 'User is already assigned to this shop.'], 409);
+        return $this->shopService->addUserToShop($shop, $user);
     }
 
     public function removeUserFromShop($shopId, $userId)
     {
-        $shop = Shop::findOrFail($shopId);
+        $shop = $this->shopRepository->findById($shopId);
         $user = User::findOrFail($userId);
 
-        // Detach the user from the shop
-        if ($shop->users()->where('user_id', $user->id)->exists()) {
-            $shop->users()->detach($user->id);
-            return response()->json(['message' => 'User removed from shop successfully.'], 200);
-        }
-        HistoryService::log(History::REMOVE_USER_FROM_SHOP, [
-            'shop_id' => $shopId,
-            'user_id' => $userId,
-        ]);
-        return response()->json(['message' => 'User is not assigned to this shop.'], 404);
+        return $this->shopService->removeUserFromShop($shop, $user);
     }
-
-    public function shopsByEmployer()
+    public function shopsByEmployer(): JsonResponse
     {
         $user = auth()->user();
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $userId = $user->id;
-
-        // Retrieve manager and customer shop IDs
-        $ShopsManagerIds = DB::table('shop_user')
-            ->where('user_id', $userId)
-            ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
-            ->pluck('shop_id')
-            ->toArray();
-
-        $ShopsCustomerIds = DB::table('shop_user')
-            ->where('user_id', $userId)
-            ->where('role', Shop::SHOP_USER_ROLE_CUSTOMER)
-            ->pluck('shop_id')
-            ->toArray();
-
-        // Retrieve owned shops
-        $shopsOwned = Shop::where('owner', $userId)->get()->toArray();
-
-        // Merge all shops
-        $allShops = Shop::whereIn('id', array_merge($ShopsManagerIds, $ShopsCustomerIds))
-            ->orWhere('owner', $userId)
-            ->get();
-
-        // Add manager and owner flags
-        $shops = $allShops->map(function ($shop) use ($userId, $ShopsManagerIds) {
-            return array_merge($shop->toArray(), [
-                'manager' => in_array($shop->id, $ShopsManagerIds),
-                'owner' => $shop->owner == $userId,
-            ]);
-        });
-
+        $shops = $this->shopService->getShopsByEmployer($user);
         return response()->json($shops);
     }
 
-    public function usersByShop($shopId)
+    public function usersByShop($shopId): JsonResponse
     {
-        // Ensure the shop exists
         $shop = Shop::findOrFail($shopId);
-
-        // Fetch users associated with the shop
-        $users = $shop->users()->get();
-
+        $users = $this->shopService->getUsersByShop($shop);
         return response()->json($users);
     }
 
-    public function grantAdminAccess(Request $request, Shop $shop, User $user)
+    public function grantAdminAccess(Request $request, Shop $shop, User $user): JsonResponse
     {
+        $this->shopService->updateUserRoleInShop($shop, $user, Shop::SHOP_USER_ROLE_MANAGER);
+        return response()->json(['message' => 'Admin access granted successfully']);
+    }
 
+    public function revokeAdminAccess(Request $request, Shop $shop, User $user): JsonResponse
+    {
+        $this->shopService->updateUserRoleInShop($shop, $user, Shop::SHOP_USER_ROLE_CUSTOMER);
+        return response()->json(['message' => 'Admin access revoked successfully']);
+    }
 
-        // Ensure the user is already part of the shop
-        $existingRelation = $shop->users()->where('users.id', $user->id)->first();
+    public function userIsShopAdmin(Shop $shop, User $user): JsonResponse
+    {
+        $isAdmin = $this->shopService->userIsShopAdmin($shop, $user);
+        return response()->json(['is_admin' => $isAdmin]);
+    }
 
-        if (!$existingRelation) {
-            return response()->json(['error' => 'User is not a member of this shop'], 400);
+    public function toggleState($id, $state): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            $shop = $this->shopService->toggleState($user, $id, (bool)$state);
+            return response()->json(['message' => 'Shop state updated successfully', 'state' => $shop->state]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
         }
-
-        // Update or create the admin role in the pivot table
-        $shop->users()->updateExistingPivot($user->id, ['role' => Shop::SHOP_USER_ROLE_MANAGER]); // 2 for Admin
-
-        return response()->json(['message' => 'Admin access granted successfully'], 200);
     }
 
-    public function revokeAdminAccess(Request $request, Shop $shop, User $user)
+    public function getShopRules($shopId): JsonResponse
     {
-        // Ensure the user is already part of the shop
-        $existingRelation = $shop->users()->where('users.id', $user->id)->first();
-
-        if (!$existingRelation) {
-            return response()->json(['error' => 'User is not a member of this shop'], 400);
-        }
-
-        // Update or create the admin role in the pivot table
-        $shop->users()->updateExistingPivot($user->id, ['role' => Shop::SHOP_USER_ROLE_CUSTOMER]);
-
-        return response()->json(['message' => 'Admin access granted successfully'], 200);
+        $rules = $this->shopService->getShopRules($shopId);
+        return response()->json($rules);
     }
-
-
-    public function userIsShopAdmin(Shop $shop, User $user)
-    {
-        $shopUser = DB::table('shop_user')
-            ->where('shop_id', $shop->getAttribute('id'))
-            ->where('user_id', $user->getAttribute('id'))
-            ->where('role', 2)
-            ->get();
-
-
-        return response()->json($shopUser, 200);
-    }
-    public function toggleState($id, $state)
-    {
-        $currentUser = auth()->user();
-
-        $shop = Shop::where('id', $id)
-            ->where(function ($query) use ($currentUser) {
-                $query->where('owner', $currentUser->id);
-            })
-            ->first();
-
-        if (!$shop) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        $shop->state = !!$state;
-        $shop->save();
-
-        return response()->json(['message' => 'Shop state updated successfully', 'state' => $shop->state]);
-    }
-
-    public function getShopRules($shopId)
-    {
-        $currentUser = auth()->user();
-
-        // Validate if the user owns or manages the shop
-        $shop = Shop::find($shopId);
-
-//        if (!$shop) {
-//            return response()->json(['error' => 'Unauthorized'], 403);
-//        }
-
-        // Fetch all users of the shop
-        $users = $shop->users()->get();
-        $shiftLabels = ShiftLabel::where('shop_id', $shopId)->get();
-        $userDataResponse = array();
-        $userData = $users->toArray();
-        foreach ($userData as $user) {
-            $restrictedLabels = Rule::where('shop_id', $shopId)
-                ->where('rule_type', Rule::RULE_TYPE_EXCLUDE_LABELS)
-                ->where('employee_id', $user['id'])
-                ->pluck('rule_data')->toArray();
-
-            $user['shift_labels'] = $shiftLabels->map(function ($label) use ($restrictedLabels) {
-                $restrictedDaysInLabel = [];
-                foreach ($restrictedLabels as $restrictedLabel) {
-                    if ($restrictedLabel['label_id'] === $label->id) {
-                        $restrictedDaysInLabel[] = $restrictedLabel['day'];
-                    }
-                }
-                return array_merge(
-                    $label->toArray(),
-                    ['restrictedDays' => $restrictedDaysInLabel]
-                );
-            })->toArray();
-            $user['restricted_week_days'] = Rule::where('shop_id', $shopId)
-                ->where('rule_type', Rule::RULE_TYPE_EXCLUDE_DAYS)
-                ->where('employee_id', $user['id'])
-                ->pluck('rule_data')->toArray();
-            $userDataResponse[] = $user;
-        }
-
-        return response()->json($userDataResponse);
-    }
-
-
 
 }
