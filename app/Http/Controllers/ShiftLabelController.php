@@ -18,8 +18,12 @@ class ShiftLabelController extends Controller
         $this->shiftLabelService = $shiftLabelService;
     }
 
-    public function index(ShiftLabelRequest $request)
+    public function index(Request $request)
     {
+        $request->validate([
+            'shop_id' => 'required|exists:shops,id',
+        ]);
+
         $currentUser = auth()->user();
         if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $request->shop_id)) {
             return response()->json(['error' => 'You cannot manage this shop'], 403);
