@@ -66,8 +66,14 @@ class ShiftLabelController extends Controller
         return response()->json($shiftLabel, 201);
     }
 
-    public function update(ShiftLabelRequest $request, $id)
+    public function update(Request $request, $id)
     {
+        $validated = $request->validate([
+            'label' => 'string|max:255',
+            'default_duration_minutes' => 'nullable|integer',
+            'applicable_days' => 'nullable',
+        ]);
+
         $shiftLabel = $this->shiftLabelService->findById($id);
         if (!$shiftLabel) {
             return response()->json(['error' => 'Shift label not found'], 404);
@@ -79,7 +85,6 @@ class ShiftLabelController extends Controller
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
 
-        $validated = $request->validated();
         $this->shiftLabelService->updateShiftLabel($id, $validated);
 
         HistoryService::log(History::UPDATE_LABEL, $validated);
