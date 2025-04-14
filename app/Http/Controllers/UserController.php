@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Mail\ManagerRemovedUser;
-use App\Mail\ManagerVerification;
 use App\Mail\NewEmployeeRegistration;
-use App\Mail\RequestToRegister;
 use App\Models\History;
 use App\Models\Notification;
-use App\Models\Rule;
 use App\Models\Shift;
 use App\Models\ShiftLabel;
 use App\Models\User;
