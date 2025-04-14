@@ -7,7 +7,7 @@ class ShiftLabelRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // You can modify this if you want to add authorization logic
+        return true;
     }
 
     public function rules(): array

@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Log;
 class ShiftController extends Controller
 {
     // List all shifts
-
     public function index(Request $request)
     {
         // Validate optional shop_id query parameter

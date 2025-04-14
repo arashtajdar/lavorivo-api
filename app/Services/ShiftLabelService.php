@@ -2,7 +2,7 @@
 namespace App\Services;
 
 use App\Models\ShiftLabel;
-use App\Repository\ShiftLabelRepository;
+use App\Repositories\ShiftLabelRepository;
 use Illuminate\Support\Collection;
 
 class ShiftLabelService
