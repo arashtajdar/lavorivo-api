@@ -84,4 +84,68 @@ class ShopControllerTest extends TestCase
             ]);
     }
 
+    /**
+     * Test update method updates an existing shop
+     */
+    public function test_update_modifies_existing_shop()
+    {
+        // Authenticate user
+        $this->actingAs($this->user);
+
+        // Prepare test data
+        $updateData = [
+            'name' => $this->faker->company,
+            'description' => $this->faker->sentence,
+        ];
+
+        // Mock the repository to find the shop
+        $this->shopRepositoryMock->shouldReceive('findById')
+            ->once()
+            ->with($this->shop->id)
+            ->andReturn($this->shop);
+
+        // Mock the shop update
+        $this->shop->shouldReceive('update')
+            ->once()
+            ->with($updateData)
+            ->andReturn(true);
+
+        // Make the request
+        $response = $this->putJson("/api/shops/{$this->shop->id}", $updateData);
+
+        // Assert response
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'id',
+                'name',
+                'description',
+                'address',
+                'owner',
+                'created_at',
+                'updated_at'
+            ]);
+    }
+
+    /**
+     * Test destroy method deletes a shop
+     */
+    public function test_destroy_deletes_shop()
+    {
+        // Authenticate user
+        $this->actingAs($this->user);
+
+        // Mock the repository to delete the shop
+        $this->shopRepositoryMock->shouldReceive('deleteById')
+            ->once()
+            ->with($this->shop->id)
+            ->andReturn(true);
+
+        // Make the request
+        $response = $this->deleteJson("/api/shops/{$this->shop->id}");
+
+        // Assert response
+        $response->assertStatus(200)
+            ->assertJson(['message' => 'Shop deleted']);
+    }
+
 }
