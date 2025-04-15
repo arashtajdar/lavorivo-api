@@ -90,7 +90,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/auto', [ShiftController::class, 'auto']);
         Route::apiResource('/', ShiftController::class)->except(['create', 'edit'])->names('shifts');
     });
-    Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
+    Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']); // Todo: needs change
 
 
     // Shift label routes
@@ -100,6 +100,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::patch('/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
         Route::apiResource('/', ShiftLabelController::class)->except(['create', 'edit'])->names('shift-labels');
     });
+    Route::get('/active-shift-labels', [ShiftLabelController::class, 'getAllActive']); // Todo: needs change
 
     // Shift swap routes
     Route::prefix('shift-swap')->group(function () {
