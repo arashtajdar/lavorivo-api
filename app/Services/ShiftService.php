@@ -103,6 +103,69 @@ class ShiftService
     }
 
     /**
+     * Update a shift
+     *
+     * @param int $id
+     * @param array $data
+     * @return array
+     */
+    public function updateShift(int $id, array $data): array
+    {
+        try {
+            // Find the shift
+            $shift = $this->shiftRepository->findById($id);
+            
+            if (!$shift) {
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Shift not found'
+                ];
+            }
+            
+            // Process shift data to remove entries with userId = 0
+            if (isset($data['shift_data']) && is_array($data['shift_data'])) {
+                foreach ($data['shift_data'] as $key => $shiftItem) {
+                    if (isset($shiftItem['userId']) && $shiftItem['userId'] === 0) {
+                        unset($data['shift_data'][$key]);
+                    }
+                }
+            }
+            
+            // Update the shift
+            $updated = $this->shiftRepository->updateById($id, $data);
+            
+            if (!$updated) {
+                return [
+                    'success' => false,
+                    'status' => 500,
+                    'message' => 'Failed to update shift'
+                ];
+            }
+            
+            // Log the action
+            $this->historyService->log(History::UPDATE_SHIFT, $data);
+            
+            // Get the updated shift
+            $updatedShift = $this->shiftRepository->findById($id);
+            
+            return [
+                'success' => true,
+                'status' => 200,
+                'data' => $updatedShift
+            ];
+        } catch (\Exception $e) {
+            Log::error('An error occurred while updating the shift.', ['id' => $id, 'data' => $data]);
+            return [
+                'success' => false,
+                'status' => 500,
+                'message' => 'An error occurred while updating the shift.',
+                'details' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Auto-assign shifts for a shop
      *
      * @param array $data

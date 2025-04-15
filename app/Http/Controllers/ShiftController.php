@@ -93,22 +93,17 @@ class ShiftController extends Controller
 
     public function update(Request $request, $id)
     {
-        $previousShiftInDb = Shift::findOrFail($id);
-
         $validatedRequest = $request->validate([
             'shift_data' => 'sometimes|array',
         ]);
-
-        foreach ($validatedRequest['shift_data'] as $key => $shift) {
-            if ($shift['userId'] === 0) {
-                unset($validatedRequest['shift_data'][$key]);
-            }
+        
+        $result = $this->shiftService->updateShift($id, $validatedRequest);
+        
+        if (!$result['success']) {
+            return response()->json(['error' => $result['message']], $result['status']);
         }
-        $previousShiftInDb->shift_data = $validatedRequest['shift_data'];
-        $previousShiftInDb->save();
-        HistoryService::log(History::UPDATE_SHIFT, $validatedRequest);
-
-        return response()->json($previousShiftInDb);
+        
+        return response()->json($result['data']);
     }
 
     public function destroy($id)
