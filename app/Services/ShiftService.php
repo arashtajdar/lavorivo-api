@@ -114,7 +114,7 @@ class ShiftService
         try {
             // Find the shift
             $shift = $this->shiftRepository->findById($id);
-            
+
             if (!$shift) {
                 return [
                     'success' => false,
@@ -122,7 +122,7 @@ class ShiftService
                     'message' => 'Shift not found'
                 ];
             }
-            
+
             // Process shift data to remove entries with userId = 0
             if (isset($data['shift_data']) && is_array($data['shift_data'])) {
                 foreach ($data['shift_data'] as $key => $shiftItem) {
@@ -131,10 +131,10 @@ class ShiftService
                     }
                 }
             }
-            
+
             // Update the shift
             $updated = $this->shiftRepository->updateById($id, $data);
-            
+
             if (!$updated) {
                 return [
                     'success' => false,
@@ -142,13 +142,13 @@ class ShiftService
                     'message' => 'Failed to update shift'
                 ];
             }
-            
+
             // Log the action
             $this->historyService->log(History::UPDATE_SHIFT, $data);
-            
+
             // Get the updated shift
             $updatedShift = $this->shiftRepository->findById($id);
-            
+
             return [
                 'success' => true,
                 'status' => 200,

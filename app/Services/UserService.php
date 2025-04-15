@@ -92,14 +92,14 @@ class UserService
         try {
             $user = User::findOrFail($userId);
             $user->delete();
-            
+
             Mail::to($user->email)->send(new ManagerRemovedUser());
-            
+
             HistoryService::log(History::REMOVE_EMPLOYEE, [
                 "employee_id" => $userId,
                 "manager_id" => $currentManagerId,
             ]);
-            
+
             return true;
         } catch (Exception $e) {
             Log::error("Error removing employee", [
@@ -121,7 +121,7 @@ class UserService
     public function addEmployee(array $data, int $currentManagerId)
     {
         $this->validateEmployeeData($data);
-        
+
         // Check if manager has reached maximum employees
         $manager = User::find($currentManagerId);
         if (count($manager->employees) >= $manager->subscription->maximum_employees) {
@@ -150,16 +150,16 @@ class UserService
 
         // Send email
         Mail::to($data['email'])->send(new NewEmployeeRegistration($user, $rawPassword, $verificationUrl));
-        
+
         // Create notification
         $message = "New employee created: " . $user->email;
         NotificationService::create(
-            $currentManagerId, 
-            Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED, 
-            $message, 
+            $currentManagerId,
+            Notification::NOTIFICATION_TYPE_NEW_EMPLOYEE_CREATED,
+            $message,
             ["id" => $user->id]
         );
-        
+
         // Log history
         HistoryService::log(History::ADD_EMPLOYEE, [
             "employee_id" => $user->id,
@@ -232,11 +232,11 @@ class UserService
         $user->ownedShops()->delete();
         $user->employees()->delete();
         $user->delete();
-        
+
         HistoryService::log(History::USER_DELETED_ACCOUNT, [
             "user_id" => $id,
         ]);
-        
+
         return true;
     }
 
@@ -251,7 +251,7 @@ class UserService
     public function getUsersByShop(int $shopId, int $currentUserId)
     {
         $shop = Shop::where('id', $shopId)->firstOrFail();
-        
+
         // Check if user is authorized
         if (!$this->isUserAuthorizedForShop($shopId, $currentUserId)) {
             Log::error("Unauthorized access trial to usersByShop", [
@@ -274,19 +274,19 @@ class UserService
     public function isUserAuthorizedForShop(int $shopId, int $userId)
     {
         $shop = Shop::where('id', $shopId)->first();
-        
+
         // Check if user is shop owner
         if ($shop && $shop->owner == $userId) {
             return true;
         }
-        
+
         // Check if user is shop manager
         $isShopManager = DB::table('shop_user')
             ->where('shop_id', $shopId)
             ->where('user_id', $userId)
             ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
             ->exists();
-            
+
         return $isShopManager;
     }
 
@@ -311,7 +311,7 @@ class UserService
     {
         $employees = User::where('employer', $managerId)->with('shops')->get()->toArray();
         $result = [];
-        
+
         foreach ($employees as $employee) {
             $result[] = [
                 'id' => $employee['id'],
@@ -322,7 +322,7 @@ class UserService
                 'shops' => $employee['shops'],
             ];
         }
-        
+
         return $result;
     }
 
@@ -346,9 +346,9 @@ class UserService
         $user = User::findOrFail($userId);
         $user->name = $data['name'];
         $user->save();
-        
+
         HistoryService::log(History::USER_UPDATED_PROFILE, $data);
-        
+
         return $user;
     }
 
@@ -379,7 +379,7 @@ class UserService
 
         $user->password = Hash::make($data['new_password']);
         $user->save();
-        
+
         HistoryService::log(History::USER_CHANGED_PASSWORD, [
             'user_id' => $userId,
             'changed_at' => now()
@@ -401,13 +401,13 @@ class UserService
             'id' => $shopId,
             'owner' => $userId
         ])->exists();
-        
+
         $manageThisShop = DB::table('shop_user')
             ->where('shop_id', $shopId)
             ->where('user_id', $userId)
             ->where('role', Shop::SHOP_USER_ROLE_MANAGER)
             ->exists();
-            
+
         return $ownThisShop || $manageThisShop;
     }
 
@@ -422,7 +422,7 @@ class UserService
         $totalItems = 0;
         $doneItems = 0;
         $responseData = [];
-        
+
         // Get user's shops and employees
         $shops = Shop::where('owner', $userId)->get();
         $employees = User::where('employer', $userId)->get();
@@ -436,7 +436,7 @@ class UserService
         if (count($shops)) {
             $doneItems++;
         }
-        
+
         // Employees
         $totalItems++;
         $responseData[] = [
@@ -446,7 +446,7 @@ class UserService
         if (count($employees)) {
             $doneItems++;
         }
-        
+
         // Shift labels
         $totalItems++;
         $shiftLabelCount = 0;
@@ -499,22 +499,22 @@ class UserService
         $rulesHistory = History::where('user_id', $userId)
             ->where('action_type', History::RULE_ADDED)
             ->first();
-            
+
         if ($rulesHistory) {
             $doneItems++;
             $ruleCount = 'some';
         }
-        
+
         $responseData[] = [
             'title' => 'Shift Rules',
             'count' => $ruleCount
         ];
 
         $percent = round($doneItems / $totalItems * 100);
-        
+
         return [
             'data' => $responseData,
             'percent' => $percent
         ];
     }
-} 
+}
