@@ -33,6 +33,20 @@ class ShiftRepository
     }
 
     /**
+     * Find a shift by shop ID and date
+     *
+     * @param int $shop_id
+     * @param string $date
+     * @return Shift|null
+     */
+    public function findByShopIdAndDate(int $shop_id, string $date): ?Shift
+    {
+        return $this->model->where('shop_id', $shop_id)
+            ->where('date', $date)
+            ->first();
+    }
+
+    /**
      * Find a shift by ID
      *
      * @param int $id

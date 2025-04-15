@@ -2,18 +2,23 @@
 
 namespace App\Services;
 
+use App\Models\History;
 use App\Models\Shift;
 use App\Repositories\ShiftRepository;
+use App\Services\HistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class ShiftService
 {
     protected ShiftRepository $shiftRepository;
+    protected HistoryService $historyService;
 
-    public function __construct(ShiftRepository $shiftRepository)
+    public function __construct(ShiftRepository $shiftRepository, HistoryService $historyService)
     {
         $this->shiftRepository = $shiftRepository;
+        $this->historyService = $historyService;
     }
 
     /**
@@ -45,6 +50,47 @@ class ShiftService
                 'shift_data' => $shift->shift_data,
             ];
         });
+    }
+
+    /**
+     * Remove a shift by updating its shift data
+     *
+     * @param array $data
+     * @return array
+     */
+    public function removeShift(array $data): array
+    {
+        try {
+            $shift = $this->shiftRepository->findByShopIdAndDate($data['shopId'], $data['date']);
+            
+            if (!$shift) {
+                Log::error('Shift not found.', $data);
+                return [
+                    'success' => false,
+                    'status' => 404,
+                    'message' => 'Shift not found.'
+                ];
+            }
+
+            $shift->shift_data = $data['shiftData'];
+            $shift->save();
+            
+            $this->historyService->log(History::REMOVE_SHIFT, $data);
+
+            return [
+                'success' => true,
+                'status' => 200,
+                'message' => 'Shift updated successfully.'
+            ];
+        } catch (\Exception $e) {
+            Log::error('An error occurred while removing the shift.', $data);
+            return [
+                'success' => false,
+                'status' => 500,
+                'message' => 'An error occurred while removing the shift.',
+                'details' => $e->getMessage()
+            ];
+        }
     }
 
     /**

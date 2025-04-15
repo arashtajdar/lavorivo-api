@@ -49,24 +49,13 @@ class ShiftController extends Controller
             Log::error('You cannot manage this shop', $validatedData);
             return response()->json(['error' => 'You cannot manage this shop'], 403);
         }
-        try {
-            $shift = Shift::where('shop_id', $validatedData['shopId'])
-                ->where('date', $validatedData['date'])
-                ->first();
-            if (!$shift) {
-                Log::error('Shift not found.', $validatedData);
-                return response()->json(['error' => 'Shift not found.'], 404);
-            }
-
-            $shift->shift_data = $validatedData['shiftData'];
-            $shift->save();
-            HistoryService::log(History::REMOVE_SHIFT, $validatedData);
-
-            return response()->json(['message' => 'Shift updated successfully.'], 200);
-        } catch (\Exception $e) {
-            Log::error('An error occurred while removing the shift.', $validatedData);
-            return response()->json(['error' => 'An error occurred while removing the shift.', 'details' => $e->getMessage()], 500);
-        }
+        
+        $result = $this->shiftService->removeShift($validatedData);
+        
+        return response()->json(
+            $result['success'] ? ['message' => $result['message']] : ['error' => $result['message'], 'details' => $result['details'] ?? null], 
+            $result['status']
+        );
     }
 
     public function employeeShifts(Request $request)
