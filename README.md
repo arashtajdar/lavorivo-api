@@ -1,6 +1,6 @@
-# Lavorivo API
+# API
 
-A robust Laravel-based REST API showcasing modern Laravel development practices and architectural patterns.
+Laravel-based REST API showcasing modern Laravel development practices and architectural patterns.
 
 ## 🚀 Features & Technical Highlights
 
