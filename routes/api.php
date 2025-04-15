@@ -86,11 +86,12 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // Shift routes
     Route::prefix('shifts')->group(function () {
         Route::post('/apply-template', [ShiftController::class, 'applyTemplate']);
-        Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
         Route::post('/removeByParams', [ShiftController::class, 'removeShift']);
         Route::post('/auto', [ShiftController::class, 'auto']);
         Route::apiResource('/', ShiftController::class)->except(['create', 'edit'])->names('shifts');
     });
+    Route::get('/employee-shifts', [ShiftController::class, 'employeeShifts']);
+
 
     // Shift label routes
     Route::prefix('shift-labels')->group(function () {
