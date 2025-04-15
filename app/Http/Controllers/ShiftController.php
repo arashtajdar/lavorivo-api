@@ -10,6 +10,7 @@ use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserOffDay;
 use App\Services\HistoryService;
+use App\Services\ShiftService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,12 @@ use Illuminate\Support\Facades\Log;
 
 class ShiftController extends Controller
 {
+    protected ShiftService $shiftService;
+
+    public function __construct(ShiftService $shiftService)
+    {
+        $this->shiftService = $shiftService;
+    }
 
     public function index(Request $request)
     {
@@ -24,20 +31,8 @@ class ShiftController extends Controller
             'shop_id' => 'sometimes|exists:shops,id',
         ]);
 
-        $shiftsQuery = Shift::query();
-        if ($request->has('shop_id')) {
-            $shiftsQuery->where('shop_id', $request->shop_id);
-        }
-
-        $shifts = $shiftsQuery->get();
-        $formattedShifts = $shifts->map(function ($shift) {
-            return [
-                'id' => $shift->id,
-                'shop_id' => $shift->shop_id,
-                'date' => $shift->date,
-                'shift_data' => $shift->shift_data,
-            ];
-        });
+        $shifts = $this->shiftService->getAllShifts($request);
+        $formattedShifts = $this->shiftService->formatShiftsForResponse($shifts);
 
         return response()->json($formattedShifts);
     }
