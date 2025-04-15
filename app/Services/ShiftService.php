@@ -56,6 +56,50 @@ class ShiftService
     }
 
     /**
+     * Store a shift
+     *
+     * @param array $data
+     * @return array
+     */
+    public function storeShift(array $data): array
+    {
+        try {
+            // Check if user can manage the shop
+            $currentUser = auth()->user();
+            if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $data['shop_id'])) {
+                Log::error('You cannot manage this shop', $data);
+                return [
+                    'success' => false,
+                    'status' => 403,
+                    'message' => 'You cannot manage this shop'
+                ];
+            }
+            
+            // Create or update the shift
+            $shift = $this->shiftRepository->createOrUpdateByShopIdAndDate($data);
+            
+            // Log the action if it's a new shift
+            if (!$shift->wasRecentlyCreated) {
+                $this->historyService->log(History::ADD_SHIFT, $data);
+            }
+            
+            return [
+                'success' => true,
+                'status' => 201,
+                'data' => $shift
+            ];
+        } catch (\Exception $e) {
+            Log::error('An error occurred while storing the shift.', $data);
+            return [
+                'success' => false,
+                'status' => 500,
+                'message' => 'An error occurred while storing the shift.',
+                'details' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get employee shifts
      *
      * @param Request $request

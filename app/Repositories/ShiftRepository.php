@@ -65,6 +65,35 @@ class ShiftRepository
     }
 
     /**
+     * Create or update a shift by shop ID and date
+     *
+     * @param array $data
+     * @return Shift
+     */
+    public function createOrUpdateByShopIdAndDate(array $data): Shift
+    {
+        $shift = $this->findByShopIdAndDate($data['shop_id'], $data['date']);
+        
+        if ($shift) {
+            // Merge shift data and remove entries with userId = 0
+            $shiftData = array_merge($shift->shift_data, $data['shift_data']);
+            foreach ($shiftData as $key => $item) {
+                if ($item['userId'] === 0) {
+                    unset($shiftData[$key]);
+                }
+            }
+            
+            $shift->shift_data = $shiftData;
+            $shift->save();
+            
+            return $shift;
+        }
+        
+        // Create new shift
+        return $this->create($data);
+    }
+
+    /**
      * Find a shift by ID
      *
      * @param int $id

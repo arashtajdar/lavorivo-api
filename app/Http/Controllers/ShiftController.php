@@ -71,38 +71,19 @@ class ShiftController extends Controller
 
     public function store(Request $request)
     {
-        $validatedRequest = $validRequest = $request->validate([
+        $validatedRequest = $request->validate([
             'shop_id' => 'required|exists:shops,id',
             'date' => 'required|date',
             'shift_data' => 'required|array',
         ]);
-        $currentUser = auth()->user();
-        if (!UserController::CheckIfUserCanManageThisShop($currentUser->id, $validatedRequest['shop_id'])) {
-            Log::error('You cannot manage this shop', $validatedRequest);
-            return response()->json(['error' => 'You cannot manage this shop'], 403);
+        
+        $result = $this->shiftService->storeShift($validatedRequest);
+        
+        if (!$result['success']) {
+            return response()->json(['error' => $result['message']], $result['status']);
         }
-        $previousShiftInDb = Shift::query()->where(
-            [
-                'shop_id' => $validatedRequest['shop_id'],
-                'date' => $validatedRequest['date'],
-            ]
-        )->first();
-        if ($previousShiftInDb) {
-            $shiftData = array_merge($previousShiftInDb['shift_data'], $validatedRequest['shift_data']);
-            foreach ($shiftData as $key => $shift) {
-                if ($shift['userId'] === 0) {
-                    unset($shiftData[$key]);
-                }
-            }
-            $previousShiftInDb->shift_data = $shiftData;
-            $previousShiftInDb->save();
-            return response()->json($previousShiftInDb, 201);
-        }
-        HistoryService::log(History::ADD_SHIFT, $validatedRequest);
-
-        $shift = Shift::create($request->all());
-
-        return response()->json($shift, 201);
+        
+        return response()->json($result['data'], $result['status']);
     }
 
     public function show($id)
