@@ -96,13 +96,13 @@ class ShiftController extends Controller
         $validatedRequest = $request->validate([
             'shift_data' => 'sometimes|array',
         ]);
-        
+
         $result = $this->shiftService->updateShift($id, $validatedRequest);
-        
+
         if (!$result['success']) {
             return response()->json(['error' => $result['message']], $result['status']);
         }
-        
+
         return response()->json($result['data']);
     }
 
