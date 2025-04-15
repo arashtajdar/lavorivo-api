@@ -81,6 +81,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/{shopId}/rules', [ShopController::class, 'getShopRules']);
         Route::get('/{shopId}/users', [ShopController::class, 'usersByShop']);
         Route::apiResource('/', ShopController::class)->names('shops');
+        Route::put('{shop}', [ShopController::class, 'update']);
+        Route::delete('{shop}', [ShopController::class, 'destroy']);
     });
 
     // Shift routes
@@ -99,6 +101,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/active', [ShiftLabelController::class, 'getAllActive']);
         Route::patch('/{id}/update-active-status', [ShiftLabelController::class, 'updateActiveStatus']);
         Route::apiResource('/', ShiftLabelController::class)->names('shift-labels');
+        Route::put('/{id}', [ShiftLabelController::class, 'update']);
+        Route::delete('/{id}', [ShiftLabelController::class, 'destroy']);
     });
     Route::get('/active-shift-labels', [ShiftLabelController::class, 'getAllActive']); // Todo: needs change
 
