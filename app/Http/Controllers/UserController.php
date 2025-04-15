@@ -64,9 +64,9 @@ class UserController extends Controller
             $validated = $request->validate([
                 'user_id' => 'required'
             ]);
-            
+
             $this->userService->removeEmployee($validated['user_id'], $currentManagerId);
-            
+
             return response()->json(
                 ['message' => 'User removed!'],
                 201);
@@ -76,7 +76,7 @@ class UserController extends Controller
                 'data' => $validated ?? null
             ]);
             return response()->json(
-                ['message' =>  $e->getMessage()],
+                ['message' => $e->getMessage()],
                 402);
         }
     }
@@ -86,7 +86,7 @@ class UserController extends Controller
         try {
             $currentManagerId = auth()->id();
             $result = $this->userService->addEmployee($request->all(), $currentManagerId);
-            
+
             return response()->json(
                 ['message' => $result['message']],
                 $result['success'] ? 201 : 400);

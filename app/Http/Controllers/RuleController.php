@@ -11,7 +11,9 @@ use Illuminate\Http\Request;
 
 class RuleController extends Controller
 {
-    public function __construct(protected RuleService $ruleService) {}
+    public function __construct(protected RuleService $ruleService)
+    {
+    }
 
     public function index(Request $request)
     {

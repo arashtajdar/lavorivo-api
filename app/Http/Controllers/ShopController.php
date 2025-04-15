@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Shop\AddUserToShopRequest;
@@ -68,6 +69,7 @@ class ShopController extends Controller
 
         return $this->shopService->removeUserFromShop($shop, $user);
     }
+
     public function shopsByEmployer(): JsonResponse
     {
         $user = auth()->user();

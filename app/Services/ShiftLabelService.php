@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\ShiftLabel;
@@ -43,6 +44,7 @@ class ShiftLabelService
     {
         return $this->shiftLabelRepository->getShiftLabelsByUserId($userId);
     }
+
     public function findById(int $id): ?ShiftLabel
     {
         return $this->shiftLabelRepository->findById($id);

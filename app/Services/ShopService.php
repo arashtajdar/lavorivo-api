@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Services;
 
 use App\Models\History;
@@ -17,10 +18,12 @@ use Illuminate\Support\Collection;
 class ShopService
 {
     protected $shopRepository;
+
     public function __construct(ShopRepository $shopRepository)
     {
         $this->shopRepository = $shopRepository;
     }
+
     public function createShop($validated, $user)
     {
         if ($user->employer) {
@@ -71,6 +74,7 @@ class ShopService
 
         return response()->json(['message' => 'User is not assigned to this shop.'], 404);
     }
+
     public function getShopsByEmployer(User $user): Collection
     {
         $managerIds = $this->shopRepository->getShopIdsByUserAndRole($user->id, Shop::SHOP_USER_ROLE_MANAGER);
@@ -133,7 +137,7 @@ class ShopService
 
             return array_merge($user->toArray(), [
                 'shift_labels' => $shiftLabels->map(function ($label) use ($restrictedLabels) {
-                    $restrictedDays = array_filter($restrictedLabels, fn ($data) => $data['label_id'] === $label->id);
+                    $restrictedDays = array_filter($restrictedLabels, fn($data) => $data['label_id'] === $label->id);
                     return array_merge($label->toArray(), ['restrictedDays' => $restrictedDays]);
                 })->toArray(),
                 'restricted_week_days' => $restrictedWeekDays,
