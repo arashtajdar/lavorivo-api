@@ -60,77 +60,13 @@ class ShiftController extends Controller
 
     public function employeeShifts(Request $request)
     {
-        $currentUser = auth()->user();
-
-        $userShopsOwned = Shop::where('owner', $currentUser->id)
-            ->where('state', 1)
-            ->get(['id', 'name']);
-
-        $userShopsManaged = Shop::join('shop_user', 'shops.id', '=', 'shop_user.shop_id')
-            ->where('shop_user.user_id', $currentUser->id)
-            ->where('shops.state', 1)
-            ->get(['shops.id', 'shops.name']);
-
-        $allUserShops = $userShopsOwned->merge($userShopsManaged);
-
-        if ($allUserShops->isEmpty()) {
-            return response()->json([]);
+        $result = $this->shiftService->getEmployeeShifts($request);
+        
+        if (!$result['success']) {
+            return response()->json(['error' => $result['message']], $result['status']);
         }
-
-        $shopMap = $allUserShops->pluck('name', 'id'); // [shop_id => shop_name]
-
-        $shiftsQuery = Shift::query()->whereIn('shop_id', $shopMap->keys());
-        if ($request->has('shop_id')) {
-            $shiftsQuery->where('shop_id', $request->shop_id);
-        }
-
-        $shifts = $shiftsQuery->get();
-
-        $userMap = User::pluck('name', 'id');
-
-        $dateFrom = $request->has('dateFrom') ? Carbon::parse($request->dateFrom) : Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $dateTo = $request->has('dateTo') ? Carbon::parse($request->dateTo) : $dateFrom->copy()->addDays(6);
-
-        if ($dateTo->lt($dateFrom)) {
-            return response()->json(['error' => 'dateTo cannot be earlier than dateFrom'], 400);
-        }
-
-        $allDates = [];
-        for ($date = $dateFrom->copy(); $date->lte($dateTo); $date->addDay()) {
-            $allDates[] = $date->toDateString();
-        }
-
-        $shiftsByShop = $shifts->groupBy('shop_id')->map(function ($shiftsInShop) use ($userMap) {
-            return $shiftsInShop->groupBy('date')->mapWithKeys(function ($shiftsOnDate, $date) use ($userMap) {
-                return [
-                    $date => $shiftsOnDate->map(function ($shift) use ($userMap) {
-                        return collect($shift->shift_data)->map(function ($data) use ($userMap) {
-                            return array_merge($data, [
-                                'username' => $userMap->get($data['userId'], 'Unassigned'),
-                            ]);
-                        })->toArray();
-                    })->flatten(1)->toArray(),
-                ];
-            });
-        });
-
-        $fullShiftsByShop = $shopMap->map(function ($shopName, $shopId) use ($shiftsByShop, $allDates) {
-            $datesWithShifts = $shiftsByShop->get($shopId, collect());
-
-            $datesData = collect($allDates)->mapWithKeys(function ($date) use ($datesWithShifts) {
-                return [
-                    $date => $datesWithShifts->get($date, []),
-                ];
-            });
-            $currentUser = auth()->user();
-            return array_merge([
-                'shop_id' => $shopId,
-                'shop_name' => $shopName,
-                'manager' => !!UserController::CheckIfUserCanManageThisShop($currentUser->id, $shopId),
-            ], $datesData->toArray());
-        });
-
-        return response()->json($fullShiftsByShop->values());
+        
+        return response()->json($result['data']);
     }
 
     public function store(Request $request)
